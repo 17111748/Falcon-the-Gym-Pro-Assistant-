@@ -4,7 +4,7 @@ import numpy as np
 import copy
 
 
-def outputImage(temp_image, imageMask):
+def outputImage(temp_image, imageMask, path):
     temp_pixel = temp_image.load()
 
     for row in range(resized_row):
@@ -12,7 +12,7 @@ def outputImage(temp_image, imageMask):
             temp_pixel[row, col] = (255, 255, 255) 
             if (imageMask[row][col] == 1):
                 temp_pixel[row, col] = (0, 0, 0) 
-    temp_image.save('images/test.jpg')
+    temp_image.save(path)
 
 def printMat(matrix):
     for row in matrix: 
@@ -149,15 +149,15 @@ maskList = []
 
 
 # Bitwise and with the mask (Convolution) 
-greenL = (32, 23, 64)
-greenU = (59, 255, 255)
+yellowL = (32, 23, 64)
+yellowU = (59, 255, 255)
 redL = (0, 23, 64)
-redU = (30,255,255)
-yellowL = (15, 23, 64)
-yellowU = (32,255,255)
+redU = (32,255,255)
+greenL = (59, 23, 64)
+greenU = (180,255,255)
 
-lowerMask = redL
-upperMask = redU
+lowerMask = greenL
+upperMask = greenU
 
 # print(str(converted_pixel[0,0]))
 
@@ -172,13 +172,14 @@ for row in range(resized_row):
         else:
             imageRowMask.append(0)
     imageMask.append(imageRowMask)
-outputImage(temp_image, imageMask)
 
-imageMask = [[1, 0, 1, 0, 0], [0, 1, 1, 1, 0], [1, 1, 1, 1, 1], [0, 1, 1, 1, 0], [0, 0, 1, 0, 0]]
+# outputImage(temp_image, imageMask, "images/test.jpg")
+
+# imageMask = [[1, 0, 1, 0, 0], [0, 1, 1, 1, 0], [1, 1, 1, 1, 1], [0, 1, 1, 1, 0], [0, 0, 1, 0, 0]]
 
 # printMat(imageMask)
-resized_col = 5
-resized_row = 5
+# resized_col = 5
+# resized_row = 5
 
 
 # Morphological Transform (Dilation, Erosion) to get rid of noise 
@@ -218,9 +219,7 @@ for row in range(resized_row):
                     imageMask[row][col] = 1
                     break 
 
-
-
-printMat(imageMask)
+outputImage(temp_image, imageMask, "images/testFiltered.jpg")
 
 # Figure out the center of the pixel 
 def max_area_histogram(histogram):
@@ -302,12 +301,25 @@ def maxRectangle(A, resized_row, resized_col):
             maxWidth = width
             maxHeight = height
 
-    return (maxRow, maxCol, maxWidth, maxHeight)
-
-imageMask = [[1, 0, 1, 0, 0], [0, 0, 1, 1, 0], [1, 0, 1, 1, 0], [1, 0, 1, 1, 1], [0, 0, 1, 1, 1]]
-printMat(imageMask)
+    return (maxRow, maxCol, maxWidth, maxHeight) 
 
 
+def getCenter(imageMask, resized_row, resized_col):
+    (maxRow, maxCol, maxWidth, maxHeight) = maxRectangle(imageMask, resized_row, resized_col)
+    row = maxRow - (maxHeight/2)
+    col = maxCol + (maxWidth/2)
+    return (row, col)
 
-print(maxRectangle(imageMask, resized_row, resized_col)) 
+# (row, col) = getCenter(imageMask, resized_row, resized_col)
+# print(str(row) + " " + str(col))
+for r in range(resized_row):
+    for c in range(resized_col):
+        imageMask[r][c] = 0
+        if abs(r - row) < 5 and abs(c - col) < 5: 
+            imageMask[r][c] = 1
+
+outputImage(temp_image, imageMask, "images/testFinal.jpg")
+
+# print(getCenter(imageMask, resized_row, resized_col))
+
 
