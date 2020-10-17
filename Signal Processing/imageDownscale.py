@@ -2,7 +2,7 @@ from PIL import Image
 import cv2 
 import numpy as np
 import copy
-
+import time 
 
 def outputImage(temp_image, imageMask, path):
     temp_pixel = temp_image.load()
