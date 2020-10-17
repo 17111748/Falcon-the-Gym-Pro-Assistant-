@@ -62,6 +62,7 @@ class LegRaisePostureAnalysis:
         if (!(sameSlope(line1Slope, groundSlope) and sameSlope(line2Slope, groundSlope) and sameSlope(line3Slope, groundSlope))):
             self.legRaise.check1 = True 
 
+        self.legRaise.processResult()
     
     # Line 1: Shoulder - Hip 
     # Line 2: Hip - Knee 
@@ -91,6 +92,7 @@ class LegRaisePostureAnalysis:
         if (!(samgeAngle(angleKnee, parallel))):
             self.legRaise.check4 = True 
 
+        self.legRaise.processResult()
 
     def legRaisePostureAnalysis(self): 
         return self.legRaise.getResult 
@@ -108,6 +110,8 @@ class LegRaisePostureAnalysis:
         
 
         def processResult(self): 
+            self.feedback_before = [] 
+            self.feedback_after = [] 
             if (self.check1): 
                 self.feedback_before.append("Lie Flat on the Ground")
             if (self.check2): 
@@ -118,6 +122,10 @@ class LegRaisePostureAnalysis:
                 self.feedback_after.append("Knees are Bent")
 
         def getResult(self): 
+            self.check1 = False
+            self.check2 = False
+            self.check3 = False 
+            self.check4 = False
             return (self.feedback_before, self.feedback_after)
 
 

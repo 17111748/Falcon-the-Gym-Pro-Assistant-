@@ -75,6 +75,7 @@ class PuhsupPostureAnalysis:
         if (angleShoulder > perpendicular and !(sameAngle(angleWrist, perpendicular))):
             self.pushup.check3 = True 
 
+        self.pushup.processResult()
     
     # Line 1: Shoulder - Hip 
     # Line 2: Hip - Knee 
@@ -104,8 +105,9 @@ class PuhsupPostureAnalysis:
         if (!(sameSlope(line1Slope, groundSlope) and sameSlope(line2Slope, groundSlope) and sameSlope(line3Slope, groundSlope))): # Back is straight and hip not bent 
             self.pushup.check4 = True 
         if (!(sameSlope(line4Slope, line1Slope))):
-            self.pushup.check5 = True 
+            self.pushup.check5 = True
 
+        self.pushup.processResult() 
 
     def pushupPostureAnalysis(self): 
         return self.pushup.getResult 
@@ -124,6 +126,8 @@ class PuhsupPostureAnalysis:
         
 
         def processResult(self): 
+            self.feedback_before = [] 
+            self.feedback_after = [] 
             if (self.check1): 
                 self.feedback_before.append("Butt is too High")
             if (self.check2): 
@@ -136,4 +140,9 @@ class PuhsupPostureAnalysis:
                 self.feedback_after.append("Go Lower")
 
         def getResult(self): 
+            self.check1 = False 
+            self.check2 = False
+            self.check3 = False
+            self.check4 = False
+            self.check5 = False
             return (self.feedback_before, self.feedback_after)
