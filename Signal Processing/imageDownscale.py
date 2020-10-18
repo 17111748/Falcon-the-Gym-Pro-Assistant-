@@ -102,41 +102,43 @@ resized_col = 120
 #     v = cmax * 100
 #     return h, s, v 
 
-
+time0 = time.time()
 # Read Image and Downscale the image 
-original_image = Image.open('images/color.jpg')
+original_image = Image.open('images/pushupDown.jpg')
 original_image_pixels = original_image.load()
 
 new_image = original_image.resize((resized_row, resized_col))
 new_image_pixels = new_image.load()
-new_image.save('images/color_160x120.jpg')
+new_image.save('images/pushupUp_160x120.jpg')
 
-# image = []
-# # Convert RGB values to HSV values 
-# # 1. Convert every pixel in Hardware 
-# new_image = Image.open('images/image_160x120.jpg')
-# new_image_pixels = new_image.load()
-# print("Image: " + str(new_image_pixels[0,0]))
-# for row in range(resized_row):
-#     rowList = [] 
-#     for col in range(resized_col):
-#         (r,g,b) = new_image_pixels[row, col]
-#         rowList.append(rgb_to_hsv(r,g,b))
-#     image.append(rowList)
-# print("Hardware: " + str(image[0][0]))
 
-# 2. Using Pillow Library  
-temp_image = Image.open('images/color_160x120.jpg')
+temp_image = Image.open('images/pushupDown_160x120.jpg')
 converted_image = temp_image.convert('HSV')
 converted_pixel = converted_image.load()
-# print("Pillow: " + str(converted_pixel[0,0]))
-
-# # 3. Using OpenCV 
-# opencv_frame = cv2.imread('images/image_160x120.jpg')
-# opencv_image = cv2.cvtColor(opencv_frame, cv2.COLOR_RGB2HSV) 
-# print("OpenCV After: " + str(opencv_image[0,0]))
+time1 = time.time()
 
 
+
+# Delete Afterward
+track_image = Image.open('images/pushupDown_160x120.jpg')
+track_image_pixels = track_image.load()
+
+row = 41
+col = 72
+size = 2
+done = False
+for r in range(resized_row):
+    for c in range(resized_col):
+        if abs(r - row) < (size ) and abs(c - col) < (size + 1): 
+            
+            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r, c]))
+            done = True
+            track_image_pixels[r, c] = (255, 10, 10)#(255, 10, 10)
+    if(done):
+        print("break")
+        done = False
+
+track_image.save('images/track_pushupDown_160x120.jpg')
 # Use this as the final 
 image = converted_image
 pixels = converted_pixel
@@ -149,17 +151,56 @@ maskList = []
 
 
 # Bitwise and with the mask (Convolution) 
-yellowL = (32, 23, 64)
-yellowU = (59, 255, 255)
-redL = (0, 23, 64)
-redU = (32,255,255)
-greenL = (59, 23, 64)
-greenU = (180,255,255)
 
-lowerMask = greenL
-upperMask = greenU
+# 126x82 size 2x3
+# Lower: (19, 160, 195)
+# Upper: (22, 255, 255)
+orangeShoulderL = (19, 160, 195)
+orangeShoulderU = (22, 255, 255)
 
-# print(str(converted_pixel[0,0]))
+# 114x83 size 2x3
+# Lower: (15, 57, 191)
+# Upper: (30, 94, 222)
+peachElbowL = (15, 57, 191)
+peachElbowU = (30, 94, 222)
+
+# 95x80 size 1x4
+# Lower: (36, 76, 182)
+# Upper: (41, 117, 234)
+hipYellowL = (36, 76, 182)
+hipYellowU = (41, 117, 234)
+
+# 111x103 size 3x2
+# Lower: (227, 63, 47)
+# Upper: (242, 255, 165)
+wristPurpleL = (227, 63, 47)
+writstPurpleU = (242, 255, 165)
+
+# 55x85 size 2x3
+# Lower: (249, 115, 126)
+# Upper: (253, 255, 210)
+kneeRedL = (249, 115, 126)
+kneeRedU = (253, 255, 210)
+
+# 27x85 size 2x3
+# Lower: (101, 70, 76)
+# Upper: (117, 145, 176)
+ankleBlueL = (101, 70, 76)
+ankleBlueU = (117, 145, 176)
+
+kneeOtherGreenL = (32, 23, 64)
+kneeOtherGreenU = (32,255,255)
+
+# 41x72 size 2x3
+# Lower: (246, 99, 162)
+# Upper: (252, 134, 255)
+ankleOtherPinkL = (246, 99, 162)
+ankleOtherPinkU = (252, 134, 255)
+
+
+lowerMask = orangeShoulderL
+upperMask = orangeShoulderU
+
 
 imageMask = []
 for row in range(resized_row):
@@ -173,7 +214,10 @@ for row in range(resized_row):
             imageRowMask.append(0)
     imageMask.append(imageRowMask)
 
-# outputImage(temp_image, imageMask, "images/test.jpg")
+
+
+
+outputImage(temp_image, imageMask, "images/test.jpg")
 
 # imageMask = [[1, 0, 1, 0, 0], [0, 1, 1, 1, 0], [1, 1, 1, 1, 1], [0, 1, 1, 1, 0], [0, 0, 1, 0, 0]]
 
@@ -219,7 +263,7 @@ for row in range(resized_row):
                     imageMask[row][col] = 1
                     break 
 
-outputImage(temp_image, imageMask, "images/testFiltered.jpg")
+# outputImage(temp_image, imageMask, "images/testFiltered.jpg")
 
 # Figure out the center of the pixel 
 def max_area_histogram(histogram):
@@ -318,7 +362,7 @@ for r in range(resized_row):
         if abs(r - row) < 5 and abs(c - col) < 5: 
             imageMask[r][c] = 1
 
-outputImage(temp_image, imageMask, "images/testFinal.jpg")
+# outputImage(temp_image, imageMask, "images/testFinal.jpg")
 
 # print(getCenter(imageMask, resized_row, resized_col))
 
