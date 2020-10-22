@@ -3,14 +3,36 @@
 
 
 int [160][120][3] inputImage; // Pixels 
-int [160][120] binaryMask;
-lowerMask = [59, 23, 64]
-upperMask = [180, 255, 255]
 
-resized_row = 160;
-resized_col = 120;
+void imageProcess(AXI_STREAM& inputStream, AXI_STREAM& outputResults)
+{
 
-void createBinaryMask() {
+    // Temporary Storage
+    int [160][120][3] inputImage;
+    int [160][120] binaryMask;
+    int [160][120] erosionMask;
+    int [160][120] outputImage;
+    
+    // Parameters 
+    lowerMask = [59, 23, 64]
+    upperMask = [180, 255, 255]
+    resized_row = 160;
+    resized_col = 120;
+
+    int[][] directions = [[-1, 0], [0, -1], [1, 0], [0, 1]]; 
+    int num_directions = 4; 
+
+    // Storing the input stream into a matrix
+    for(int row = 0; row < resized_row; row++) {
+        for(int col = 0; col < resized_col; col++) {
+            value << inputStream;
+            inputStream[row][col][0] = value[];
+            inputStream[row][col][1] = value[];
+            inputStream[row][col][2] = value[];
+        }
+    }
+
+    // Generate Binary Mask
     for(int row = 0; row < resized_row; row++) {
         for(int col = 0; col < resized_col; col++) {
             // (hue, saturation, value) = pixels[row, col]
@@ -27,14 +49,8 @@ void createBinaryMask() {
                 
         }
     } 
-}
-
-int[][] directions = [[-1, 0], [0, -1], [1, 0], [0, 1]]; 
-int num_directions = 4; 
-
-int [][] outputImage; 
-
-void erosion() {
+    
+    // Performing Erosion
     for(int row = 0; row < resized_row; row++) {
         erosionMask[row][col] = 1;
         outputImage[row][col] = 1;
@@ -59,10 +75,9 @@ void erosion() {
             }
         }
     }
-}
 
-void dilation() {
-   for(int row = 0; row < resized_row; row++) {
+    // Performing Dilation
+    for(int row = 0; row < resized_row; row++) {
         for(int col = 0; col < resized_col; col++) {
             if(erosionMask[row][col] == 0) {
                 for(int direction = 0; direction < num_directions; direction++) {
@@ -76,7 +91,9 @@ void dilation() {
             }       
         }
     } 
+
 }
+
 
 // Result[] = [maxArea, maxcol, maxWidth, maxHeight]
 int maxRectangle() {
