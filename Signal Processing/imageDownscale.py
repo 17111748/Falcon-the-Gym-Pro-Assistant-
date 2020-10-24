@@ -104,15 +104,15 @@ resized_col = 120
 
 time0 = time.time()
 # Read Image and Downscale the image 
-original_image = Image.open('images/pushupDown.jpg')
+original_image = Image.open('images/pushupDown.png')
 original_image_pixels = original_image.load()
 
 new_image = original_image.resize((resized_row, resized_col))
 new_image_pixels = new_image.load()
-new_image.save('images/pushupUp_160x120.jpg')
+new_image.save('images/pushupDown_160x120.png')
 
 
-temp_image = Image.open('images/pushupDown_160x120.jpg')
+temp_image = Image.open('images/pushupDown_160x120.png')
 converted_image = temp_image.convert('HSV')
 converted_pixel = converted_image.load()
 time1 = time.time()
@@ -120,25 +120,26 @@ time1 = time.time()
 
 
 # Delete Afterward
-track_image = Image.open('images/pushupDown_160x120.jpg')
+track_image = Image.open('images/pushupDown_160x120.png')
 track_image_pixels = track_image.load()
 
-row = 41
-col = 72
+row = 39
+col = 107
 size = 2
 done = False
 for r in range(resized_row):
     for c in range(resized_col):
-        if abs(r - row) < (size ) and abs(c - col) < (size + 1): 
+        if abs(r - row) < (size) and abs(c - col) < (size): 
             
             print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r, c]))
+            #print(str(r) + "x" + str(c+1) + ": " + str(converted_pixel[r, c+1]))
             done = True
             track_image_pixels[r, c] = (255, 10, 10)#(255, 10, 10)
     if(done):
         print("break")
         done = False
 
-track_image.save('images/track_pushupDown_160x120.jpg')
+track_image.save('images/track_pushupDown_160x120.png')
 # Use this as the final 
 image = converted_image
 pixels = converted_pixel
@@ -152,54 +153,56 @@ maskList = []
 
 # Bitwise and with the mask (Convolution) 
 
-# 126x82 size 2x3
-# Lower: (19, 160, 195)
-# Upper: (22, 255, 255)
-orangeShoulderL = (19, 160, 195)
-orangeShoulderU = (22, 255, 255)
 
-# 114x83 size 2x3
-# Lower: (15, 57, 191)
-# Upper: (30, 94, 222)
-peachElbowL = (15, 57, 191)
-peachElbowU = (30, 94, 222)
+# 142x98 (pushupDown)
+# Lower: (21, 106, 160)
+# Upper: (29, 133, 203)
+shoulderOrangeL = (21, 106, 160)
+shoulderOrangeU = (29, 133, 203)
 
-# 95x80 size 1x4
-# Lower: (36, 76, 182)
-# Upper: (41, 117, 234)
-hipYellowL = (36, 76, 182)
-hipYellowU = (41, 117, 234)
 
-# 111x103 size 3x2
-# Lower: (227, 63, 47)
-# Upper: (242, 255, 165)
-wristPurpleL = (227, 63, 47)
-writstPurpleU = (242, 255, 165)
+# 131x99 (pushupDown)
+# Lower: (21, 13, 170)
+# Upper: (36, 24, 201)
+elbowPeachL = (21, 13, 170)
+elbowPeachU = (36, 24, 201)
 
-# 55x85 size 2x3
-# Lower: (249, 115, 126)
-# Upper: (253, 255, 210)
-kneeRedL = (249, 115, 126)
-kneeRedU = (253, 255, 210)
 
-# 27x85 size 2x3
-# Lower: (101, 70, 76)
-# Upper: (117, 145, 176)
-ankleBlueL = (101, 70, 76)
-ankleBlueU = (117, 145, 176)
+# 116x105 (pushupDown)
+# Lower: (42, 70, 209)
+# Upper: (45, 100, 250)
+hipYellowL = (42, 70, 209)
+hipYellowU = (45, 100, 250)
+
+# 133x114 (pushupDown)
+# Lower: (171, 55, 140)
+# Upper: (187, 94, 157)
+wristPurpleL = (171, 55, 140)
+writstPurpleU = (187, 94, 157)
+
+
+# 65x105 size 6x3
+# Lower: (239, 73, 133)
+# Upper: (253, 134, 202)
+kneeRedL = (239, 73, 133)
+kneeRedU = (252, 134, 202)
+
+# 39x107 (pushupDown)
+# Lower: (136, 70, 209)
+# Upper: (141, 78, 243)
+ankleBlueL = (136, 70, 209)
+ankleBlueU = (141, 78, 243)
 
 kneeOtherGreenL = (32, 23, 64)
 kneeOtherGreenU = (32,255,255)
 
-# 41x72 size 2x3
-# Lower: (246, 99, 162)
-# Upper: (252, 134, 255)
+
 ankleOtherPinkL = (246, 99, 162)
 ankleOtherPinkU = (252, 134, 255)
 
 
-lowerMask = orangeShoulderL
-upperMask = orangeShoulderU
+lowerMask = kneeRedL
+upperMask = kneeRedU
 
 
 imageMask = []
@@ -217,7 +220,7 @@ for row in range(resized_row):
 
 
 
-outputImage(temp_image, imageMask, "images/test.jpg")
+outputImage(temp_image, imageMask, "images/test.png")
 
 # imageMask = [[1, 0, 1, 0, 0], [0, 1, 1, 1, 0], [1, 1, 1, 1, 1], [0, 1, 1, 1, 0], [0, 0, 1, 0, 0]]
 
