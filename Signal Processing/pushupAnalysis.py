@@ -80,47 +80,13 @@ class PushupPostureAnalysis:
     def sameAngle(self, angle1, angle2, threshold = 0.1): 
         return abs(angle1 - angle2) < threshold 
 
-    # Line 1: Shoulder - Hip 
-    # Line 2: Hip - Knee 
-    # Line 3: Knee - Ankle 
-    # Line 4: Shoulder - Elbow 
-    # Line 5: Elbow - Wrist 
-    # def pushupMoveBefore(self, bodyParts):
-
-    #     shoulder = bodyParts[0]
-    #     elbow = bodyParts[1]
-    #     wrist = bodyParts[2]
-    #     hip = bodyParts[3]
-    #     knee = bodyParts[4]
-    #     ankle = bodyParts[6]
-
-    #     line1Slope = self.getSlope(shoulder, hip)
-    #     line2Slope = self.getSlope(hip, knee)
-    #     line3Slope = self.getSlope(knee, ankle)
-    #     line4Slope = self.getSlope(shoulder, elbow)
-    #     line5Slope = self.getSlope(elbow, wrist)
-
-    #     angleShoulder = self.getAngle(hip, shoulder, elbow)
-    #     angleWrist = self.getAngle(elbow, wrist, groundList[0])
-      
-
-    #     groundSlope = self.getSlope(self.groundList[0], self.groundList[1])
-        
-    #     if (~(sameSlope(line1Slope, line2Slope))): # Hip is too high 
-    #         self.pushup.check1 = True 
-    #     if (~(sameSlope(line2Slope, line3Slope))): # Knees are Bent 
-    #         self.pushup.check2 = True 
-    #     if (angleShoulder > perpendicular and ~(sameAngle(angleWrist, perpendicular))):
-    #         self.pushup.check3 = True 
-
-    #     self.pushup.processResult()
     
     # Line 1: Shoulder - Hip 
     # Line 2: Hip - Knee 
     # Line 3: Knee - Ankle 
     # Line 4: Shoulder - Elbow 
     # Line 5: Elbow - Wrist 
-    def pushupMoveAfter(self, bodyParts):
+    def feedbackCalculation(self, bodyParts, default=True):
 
         shoulder = bodyParts[0]
         elbow = bodyParts[1]
@@ -134,8 +100,6 @@ class PushupPostureAnalysis:
         line3Slope = self.getSlope(knee, ankle)
         line4Slope = self.getSlope(shoulder, elbow)
         line5Slope = self.getSlope(elbow, wrist)
-
-        # groundSlope = self.getSlope(self.groundList[0], self.groundList[1])
         
         angleHip = self.getAngle(shoulder, hip, knee)
         angleKnee = self.getAngle(hip, knee, ankle)
