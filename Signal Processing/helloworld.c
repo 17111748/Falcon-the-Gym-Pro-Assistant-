@@ -58,10 +58,11 @@ XUartLite UartLite;		/* Instance of the UartLite Device */
 
 #define IMAGE_SIZE 57600
 
-
 #define RESIZED_ROW 160
 #define RESIZED_COL 120
 #define NUM_DIRECTIONS 4
+#define NUM_JOINTS 1
+
 u8 lowerMask[3] = {15, 20, 64};
 u8 upperMask[3] = {180, 255, 255};
 u8 directions[4][2] = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
@@ -71,6 +72,12 @@ struct Stack {
     unsigned capacity;
     int* array;
 };
+
+// Function Prototypes
+void storeImage(unsigned char* dest);
+void binaryMask(unsigned char* src, unsigned char* dest);
+void erode(unsigned char* src, unsigned char* dest);
+void dilate(unsigned char* src, unsigned char* dest);
 
 int main()
 {
@@ -91,93 +98,21 @@ int main()
 
     // Loading the image into memory
     unsigned char* imagePtr = XPAR_BRAM_0_BASEADDR; // Base addr of the BRAM block
-
-    int received_count;
-    received_count = 0;
-	while(received_count < IMAGE_SIZE) {
-		received_count += XUartLite_Recv(&UartLite, imagePtr + received_count, IMAGE_SIZE - received_count); // Storing all of the bytes received from UART into BRAM at the base_addr
-//		xil_printf("%d\n\r", received_count);
-	}
-
+	storeImage(imagePtr);
 
 	// Repeat the following for each of the various body locations
-	for(int i = 0; i < 1; i++) {
+	for(int i = 0; i < NUM_JOINTS; i++) {
 		// Generating Binary Mask
 		unsigned char* binMaskPtr = 0xC000E100;
-		for(int i = 0; i < 160 * 120; i ++) {
-			u8 hue = imagePtr[3 * i];
-			u8 saturation = imagePtr[3 * i + 1];
-			u8 value = imagePtr[3 * i + 2];
-			if(hue >= lowerMask[0] && saturation >= lowerMask[1] && value >= lowerMask[2] && hue <= upperMask[0] && saturation <= upperMask[1] && value <= upperMask[2]) {
-	//			xil_printf("hello");
-				binMaskPtr[i] = 1;
-			}
-			else {
-				binMaskPtr[i] = 0;
-			}
-		}
+		createBinaryMask(imagePtr, binMaskPtr);
 
 		// Performing Erosion
 		unsigned char* erosMaskPtr = 0xC0012C00;
+		erode(binMaskPtr, erosMaskPtr);
+
+		// Performing Dilation
 		unsigned char* dilMaskPtr = 0xC0017700;
-		for(int i = 0; i < RESIZED_ROW; i++) {
-			for(int j = 0; j < RESIZED_COL; j++) {
-				int ind = i * 120 + j;
-				erosMaskPtr[ind] = 1;
-				if (binMaskPtr[ind] == 0) {
-					erosMaskPtr[ind] = 0;
-					dilMaskPtr[ind] = 0;
-				}
-				else {
-					for(int direction = 0; direction < NUM_DIRECTIONS; direction++) {
-						u8 x = i + directions[direction][0];
-						u8 y = j + directions[direction][1];
-						if(x < 0 || x >= RESIZED_ROW || y < 0 || y >= RESIZED_COL) {
-							erosMaskPtr[ind] = 0;
-							dilMaskPtr[ind] = 0;
-						}
-						else if(binMaskPtr[ind] == 0) {
-							erosMaskPtr[ind] = 0;
-							dilMaskPtr[ind] = 0;
-						}
-					}
-				}
-			}
-		}
-
-		for(int row = 0; row < RESIZED_ROW; row++) {
-			for(int col = 0; col < RESIZED_COL; col++) {
-				int ind = row * RESIZED_COL + col;
-				if(erosMaskPtr[ind] == 0) {
-					for(int direction = 0; direction < NUM_DIRECTIONS; direction++) {
-						int x = row + directions[direction][0];
-						int y = col + directions[direction][1];
-	                    if (x >= 0 && x < RESIZED_ROW && y >= 0 && y < RESIZED_COL && erosMaskPtr[ind] == 1) {
-	                        dilMaskPtr[ind] = 1;
-	                        break;
-	                    }
-					}
-				}
-			}
-		}
-
-	//	for (int i = IMAGE_SIZE - 10; i < IMAGE_SIZE; i++) {
-	//		xil_printf("%d\n\r", bramPtr[i]);
-	//	}
-
-	//    for(int i = 0; i < 56000; i++) {
-	//    	bramPtr[i] = i;
-	//    }
-	//
-	//    for(int i = 0; i < 56000; i++) {
-	//    	if(bramPtr[i] != i % 256) {
-	//    		xil_printf("FUCK");
-	//    		return 1;
-	//    	}
-	//    }
-//		for(int i = 0; i < 160 * 120; i++) {
-//			xil_printf("%d\n\r", dilMaskPtr[i]);
-//		}
+		dilate(erosMaskPtr, dilMaskPtr)
 	}
 
     xil_printf("done\n\r");
@@ -186,6 +121,75 @@ int main()
     return 0;
 }
 
+// Function listens to the UART port and loads IMAGE_SIZE bytes starting at dest
+void storeImage(unsigned char* dest) {
+    int received_count;
+    received_count = 0;
+	while(received_count < IMAGE_SIZE) {
+		received_count += XUartLite_Recv(&UartLite, dest + received_count, IMAGE_SIZE - received_count); // Storing all of the bytes received from UART into BRAM at the base_addr
+//		xil_printf("%d\n\r", received_count);
+	}
+}
+
+// Function generates a binary mask with the bytes stored at src and loads into dest
+void createBinaryMask(unsigned char* src, unsigned char* dest) {
+	for(int i = 0; i < 160 * 120; i++) {
+		u8 hue = src[3 * i];
+		u8 saturation = src[3 * i + 1];
+		u8 value = src[3 * i + 2];
+		if(hue >= lowerMask[0] && saturation >= lowerMask[1] && value >= lowerMask[2] && hue <= upperMask[0] && saturation <= upperMask[1] && value <= upperMask[2]) {
+			dest[i] = 1;
+		}
+		else {
+			dest[i] = 0;
+		}
+	}
+}
+
+// Function performs an erosion with the bytes stored at src and loads into dest
+void erode(unsigned char* src, unsigned char* dest) {
+	for(int i = 0; i < RESIZED_ROW; i++) {
+		for(int j = 0; j < RESIZED_COL; j++) {
+			int ind = i * 120 + j;
+			dest[ind] = 1;
+			if (src[ind] == 0) {
+				dest[ind] = 0;
+			}
+			else {
+				for(int direction = 0; direction < NUM_DIRECTIONS; direction++) {
+					u8 x = i + directions[direction][0];
+					u8 y = j + directions[direction][1];
+					if(x < 0 || x >= RESIZED_ROW || y < 0 || y >= RESIZED_COL) {
+						dest[ind] = 0;
+					}
+					else if(src[ind] == 0) {
+						dest[ind] = 0;
+					}
+				}
+			}
+		}
+	}
+}
+
+// Function performs a dilation with the bytes stored at src and loads into dest
+void dilate(unsigned char* src, unsigned char* dest) {
+	for(int row = 0; row < RESIZED_ROW; row++) {
+		for(int col = 0; col < RESIZED_COL; col++) {
+			int ind = row * RESIZED_COL + col;
+			dest[ind] = 0;
+			if(src[ind] == 0) {
+				for(int direction = 0; direction < NUM_DIRECTIONS; direction++) {
+					int x = row + directions[direction][0];
+					int y = col + directions[direction][1];
+					if (x >= 0 && x < RESIZED_ROW && y >= 0 && y < RESIZED_COL && src[ind] == 1) {
+						dest[ind] = 1;
+						break;
+					}
+				}
+			}
+		}
+	}
+}
 
 //// C program for array implementation of stack
 //
