@@ -46,7 +46,7 @@ class LungePostureAnalysis:
 
     # Helper Functions 
     def getSlope(self, pos1, pos2): 
-        return (pos2[1] - pos1[1])/(pos2[0] - pos1[0])
+        return -(pos2[1] - pos1[1])/(pos2[0] - pos1[0])
 
     def getAngle(self, Point1, MidPoint, Point2):
         a = np.array(Point1)
@@ -116,3 +116,17 @@ class LungePostureAnalysis:
         return self.lunge.getResult()
         
     
+groundList = [(0,0), (0,0)]
+bodyParts = [(142,98), (131,99), (133,114), (116,105), (65,105), (0,0), (39,107), (0,0)]
+upBodyParts = [(134.0, 82.5), (133, 98), (135.5, 112.0), (103.5, 78.5), (59.0, 99.0), (93.0, 50.0), (34.0, 107.0), (59.5, 97.0)]
+
+lunge = LungePostureAnalysis(groundList)
+
+lunge.feedbackCalculation(bodyParts)
+result = lunge.getResult()
+print(result)
+
+print("HELLOOOOOO")
+lunge.feedbackCalculation(upBodyParts)
+result = lunge.getResult()
+print(result)

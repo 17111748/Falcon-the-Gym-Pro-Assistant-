@@ -47,7 +47,7 @@ class LegRaisePostureAnalysis:
 
     # Helper Functions 
     def getSlope(self, pos1, pos2): 
-        return (pos2[1] - pos1[1])/(pos2[0] - pos1[0])
+        return -(pos2[1] - pos1[1])/(pos2[0] - pos1[0])
 
     def getAngle(self, Point1, MidPoint, Point2):
         a = np.array(Point1)
@@ -82,18 +82,30 @@ class LegRaisePostureAnalysis:
         line2Slope = self.getSlope(hip, knee)
         line3Slope = self.getSlope(knee, ankle)
 
+        print("Slope: ")
+        print(line1Slope)
+        print(line2Slope)
+        print(line3Slope)
+
+
+
         # groundSlope = self.getSlope(self.groundList[0], self.groundList[1])
         
         angleHip = self.getAngle(shoulder, hip, knee)
         angleKnee = self.getAngle(hip, knee, ankle)
 
-        if not (self.sameAngle(angleHip, perpendicular)):
+        print("Angle: ")
+
+        print(angleHip)
+        print(angleKnee)
+
+        if not (self.sameAngle(angleHip, perpendicular, 10)):
             if(angleHip > perpendicular):
                 self.legRaise.check1 = True 
             else: 
                 self.legRaise.check2 = True 
         
-        if not (self.sameAngle(angleKnee, parallel)):
+        if not (self.sameAngle(angleKnee, parallel, 10)):
             self.legRaise.check3 = True 
 
         self.legRaise.processResult()
@@ -106,3 +118,17 @@ class LegRaisePostureAnalysis:
 
 #############################################################
 
+groundList = [(0,0), (0,0)]
+bodyParts = [(44.0, 116.0), (133, 98), (0.0, 0.0), (67.0, 114.0), (83.5, 71.5), (81.0, 52.5), (90.0, 51.0), (81.0, 72.0)]
+upBodyParts = [(44.5, 117.0), (133, 98), (0.0, 0.0), (69.5, 111.0), (119.5, 116.5), (91.0, 51.5), (144.5, 116.0), (120.5, 115.5)]
+
+legRaise = LegRaisePostureAnalysis(groundList)
+
+legRaise.feedbackCalculation(bodyParts)
+result = legRaise.getResult()
+print(result)
+
+print("\n\n")
+legRaise.feedbackCalculation(upBodyParts)
+result = legRaise.getResult()
+print(result)

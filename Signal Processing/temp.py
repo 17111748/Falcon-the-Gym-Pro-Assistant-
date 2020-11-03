@@ -330,15 +330,13 @@ def mainFunction(bodyHSVBounds):
         lowerMask = bodyPart[0]
         upperMask = bodyPart[1]
         imageMask = jointTracking(lowerMask, upperMask)
-        writeFile(imageMask, "joint.txt")
-        # if(count == 3):
-        #     temp_image = Image.open(downscalePath) 
-        #     outputImage(temp_image, imageMask, "images/test.png")
+        if(count == 3):
+            temp_image = Image.open(downscalePath) 
+            outputImage(temp_image, imageMask, "images/test.png")
             
         imageMask = dilation(imageMask)
-        writeFile(imageMask, "dilation.txt")
+        imageMask = dilation(imageMask)
         imageMask = erosion(imageMask)
-        writeFile(imageMask, "erosion.txt")
         # imageMask = erosion(imageMask)
         (row, col) = getCenter(imageMask, resized_row, resized_col)
         positions.append((row, col))
