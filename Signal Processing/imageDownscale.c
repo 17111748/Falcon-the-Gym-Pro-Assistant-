@@ -95,100 +95,71 @@ void imageProcess(AXI_STREAM& inputStream, AXI_STREAM& outputResults)
 
 }
 
-// C program for array implementation of stack 
-
-  
-// A structure to represent a stack 
-struct Stack { 
-    int top; 
-    unsigned capacity; 
-    int* array; 
-}; 
-  
-// function to create a stack of given capacity. It initializes size of 
-// stack as 0 
-struct Stack* createStack(unsigned capacity) 
-{ 
-    struct Stack* stack = (struct Stack*)malloc(sizeof(struct Stack)); 
-    stack->capacity = capacity; 
-    stack->top = -1; 
-    stack->array = (int*)malloc(stack->capacity * sizeof(int)); 
-    return stack; 
-} 
-  
-// Stack is full when top is equal to the last index 
-int isFull(struct Stack* stack) 
-{ 
-    return stack->top == stack->capacity - 1; 
-} 
-  
-// Stack is empty when top is equal to -1 
-int isEmpty(struct Stack* stack) 
-{ 
-    return stack->top == -1; 
-} 
-  
-// Function to add an item to stack.  It increases top by 1 
-void push(struct Stack* stack, int item) 
-{ 
-    if (isFull(stack)) 
-        return; 
-    stack->array[++stack->top] = item; 
-    printf("%d pushed to stack\n", item); 
-} 
-  
-// Function to remove an item from stack.  It decreases top by 1 
-int pop(struct Stack* stack) 
-{ 
-    if (isEmpty(stack)) 
-        return INT_MIN; 
-    return stack->array[stack->top--]; 
-} 
-  
-// Function to return the top from stack without removing it 
-int peek(struct Stack* stack) 
-{ 
-    if (isEmpty(stack)) 
-        return INT_MIN; 
-    return stack->array[stack->top]; 
-} 
-  
-
 
 // Call getCenter then it'll call maxRectangle 
 
 int[] maxAreaHistogram(int[] histogram, int resized_col) {
-    struct Stack* stack = createStack(resized_col); 
+    int[resized_col] stack; 
+    int stackIndex = -1; 
     int maxArea = 0;
     int maxCol = 0; 
     int width = 0; 
     int height = 0; 
 
+    int [4] answer; 
+    
     int index = 0; 
     while(index < resized_col) {
-        if(isEmpty(stack) || (histogram[peek(stack)] <= histogram[index])) {
-            push(stack, index);
+        if((stackIndex == -1) || (histogram[stack[stackIndex]] <= histogram[index])) {
+            stackIndex += 1; 
+            stack[stackIndex] = index; 
             index += 1; 
         }
         else {
-            top_of_stack = pop(stack);
+            top_of_stack = stack[stackIndex];
+            stackIndex -= 1; 
 
-            area = histogram[top_of_stack] * (isEmpty(stack) ? index : index - peek(stack) - 1); 
+            int area = histogram[top_of_stack] * ((stackIndex == -1) ? index : index - stack[stackIndex] - 1); 
             if (maxArea < area) {
                 maxArea = area; 
                 height = histogram[top_of_stack];
-                if(!isEmpty(stack)) {
-                    maxCol = peek(stack) + 1; 
-                    width = (index - peek(stack) - 1)
+                if(stackIndex != -1) {
+                    maxCol = stack[stackIndex] + 1; 
+                    width = (index - stack[stackIndex] - 1)
                 }
                 else {
                     maxCol = 0; 
                     width = index; 
                 }
             }
-
         }
     }
+
+    while (stackIndex != -1) {
+        top_of_stack = stack[stackIndex];
+        stackIndex -= 1; 
+
+        int area = histogram[top_of_stack] * ((stackIndex == -1) ? index : index - stack[stackIndex] - 1); 
+        if (maxArea < area) {
+            maxArea = area; 
+            height = histogram[top_of_stack];
+            if(stackIndex != -1) {
+                maxCol = stack[stackIndex] + 1; 
+                width = (index - stack[stackIndex] - 1)
+            }
+            else {
+                maxCol = 0; 
+                width = index; 
+            }
+        } 
+    }
+
+    answer[0] = maxArea; 
+    answer[1] = maxCol; 
+    answer[2] = width; 
+    answer[3] = height; 
+
+    return answer; 
 }
 
 
