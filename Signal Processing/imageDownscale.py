@@ -34,9 +34,9 @@ def printMat(matrix):
         print(row)
     print("\n\n")
 
-originalPath = 'images/lungeForward.png'
-downscalePath = 'images/lungeForward_160x120.png'
-trackDownscale = 'images/track_lungeForward_160x120.png'
+originalPath = 'images/pushupDown.png'
+downscalePath = 'images/pushupDown_160x120.png'
+trackDownscale = 'images/track_pushupDown_160x120.png'
 
 resized_row = 160
 resized_col = 120 
@@ -326,69 +326,78 @@ def mainFunction(bodyHSVBounds):
     resized_col = 120 
     positions = []
     count = 0
-    for bodyPart in bodyHSVBounds: 
-        lowerMask = bodyPart[0]
-        upperMask = bodyPart[1]
-        imageMask = jointTracking(lowerMask, upperMask)
-        writeFile(imageMask, "joint.txt")
-        # if(count == 3):
-        #     temp_image = Image.open(downscalePath) 
-        #     outputImage(temp_image, imageMask, "images/test.png")
-            
-        imageMask = dilation(imageMask)
-        writeFile(imageMask, "dilation.txt")
-        imageMask = erosion(imageMask)
-        writeFile(imageMask, "erosion.txt")
-        # imageMask = erosion(imageMask)
-        (row, col) = getCenter(imageMask, resized_row, resized_col)
-        positions.append((row, col))
-        count += 1
+    # for bodyPart in bodyHSVBounds: 
+    lowerMask = bodyHSVBounds[0][0]
+    upperMask = bodyHSVBounds[0][1]
+
+    print(lowerMask)
+    print(upperMask)
+
+
+    imageMask = jointTracking(lowerMask, upperMask)
+    writeFile(imageMask, "joint.txt")
+
+    # if(count == 3):
+    #     temp_image = Image.open(downscalePath) 
+    #     outputImage(temp_image, imageMask, "images/test.png")
+    imageMask = erosion(imageMask)
+    writeFile(imageMask, "erosion.txt")
+
+
+    imageMask = dilation(imageMask)
+    writeFile(imageMask, "dilation.txt")
+    
+    # imageMask = erosion(imageMask)
+    (row, col) = getCenter(imageMask, resized_row, resized_col)
+    positions.append((row, col))
+    count += 1
     
     return positions
 
+mainFunction(bodyHSVBounds)
 
-positions = mainFunction(bodyHSVBounds)
-positions[1] = (133,98)
+# positions = mainFunction(bodyHSVBounds)
+# positions[1] = (133,98)
 
-# 133x98 Up Position
-# 132x99 Down Position 
+# # 133x98 Up Position
+# # 132x99 Down Position 
 
-print(positions)
+# print(positions)
 
-#positions.pop(7)
-#positions.pop(5)
-positions.pop(2)
-positions.pop(1)
-positions.pop(0)
-# positions = positions[:-1]
-track_image = Image.open(downscalePath)
-track_image_pixels = track_image.load()
+# #positions.pop(7)
+# #positions.pop(5)
+# positions.pop(2)
+# positions.pop(1)
+# positions.pop(0)
+# # positions = positions[:-1]
+# track_image = Image.open(downscalePath)
+# track_image_pixels = track_image.load()
 
-imageMask = []
-for r in range(resized_row):
-    temp = [0] * resized_col
-    imageMask.append(temp)
+# imageMask = []
+# for r in range(resized_row):
+#     temp = [0] * resized_col
+#     imageMask.append(temp)
 
-for posIndex in range(len(positions)):
-    pos = positions[posIndex]
-    row = int(pos[0])
-    col = int(pos[1])
-    size = 2
-    done = False
+# for posIndex in range(len(positions)):
+#     pos = positions[posIndex]
+#     row = int(pos[0])
+#     col = int(pos[1])
+#     size = 2
+#     done = False
 
-    # print(str(row) + " " + str(col))
-    for r in range(resized_row):
-        for c in range(resized_col):
-            if abs(r - row) < (size) and abs(c - col) < (size): 
-                # print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r, c]))
-                #print(str(r) + "x" + str(c+1) + ": " + str(converted_pixel[r, c+1]))
-                done = True
-                track_image_pixels[r, c] = (100, 100, 255) #(255, 10, 10)
-        if(done):
-            # print("break")
-            done = False
+#     # print(str(row) + " " + str(col))
+#     for r in range(resized_row):
+#         for c in range(resized_col):
+#             if abs(r - row) < (size) and abs(c - col) < (size): 
+#                 # print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r, c]))
+#                 #print(str(r) + "x" + str(c+1) + ": " + str(converted_pixel[r, c+1]))
+#                 done = True
+#                 track_image_pixels[r, c] = (100, 100, 255) #(255, 10, 10)
+#         if(done):
+#             # print("break")
+#             done = False
     
 
-# outputImage(temp_image, imageMask, "images/testFinal.jpg")
-print(positions)
-track_image.save('images/findPixels.png')
+# # outputImage(temp_image, imageMask, "images/testFinal.jpg")
+# print(positions)
+# track_image.save('images/findPixels.png')
