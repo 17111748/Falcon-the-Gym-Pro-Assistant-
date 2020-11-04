@@ -1,6 +1,13 @@
-import sys, pygame, cv2, time
+import sys, pygame, cv2, time, threading, queue
 from structs import *
 from colors import *
+
+def parallel(d):
+    counter = 0 
+    while(True):
+        d.threadQueue.put(counter)
+        counter+=1
+        time.sleep(2)
 
 def init(d):
     #constants
@@ -14,8 +21,8 @@ def init(d):
     d.SET_BREAK_TIME = 5
     d.RESUME_TIME = 3
     #setup pygame/camera
-    # d.camera  = cv2.VideoCapture(0)
-    d.camera = cv2.VideoCapture(1)
+    d.camera  = cv2.VideoCapture(0)
+    # d.camera = cv2.VideoCapture(1)
     if not d.camera.isOpened():
         print("Could not open video device")
     pygame.init()
@@ -45,7 +52,7 @@ def init(d):
         "u": "Push-Ups"
     }
     d.workoutFocus = "core"
-    d.currSet = 6
+    d.currSet = 1
 
     d.currWorkoutFrame = 0
     d.currentRep = 1
@@ -65,6 +72,23 @@ def init(d):
         "u": 10
     }
 
+    d.workoutHRR = {
+        "rest": 0.1,
+        "c": 0.4,
+        "l": 0.45,
+        "u": 0.7
+    }
+    d.workoutMET = {
+        "rest": 1.5,
+        "c": 2.23,
+        "l": 2.23,
+        "u": 7.55
+    }
+    #imperial (inches, pounds)
+    d.age = 21
+    d.weight = 175
+    d.calBurned = 0 
+
     d.currentScreen = screenMode.WORKOUT
     d.newScreen = True
 
@@ -73,6 +97,16 @@ def init(d):
     d.resumeFromPause = -1
     d.justResumed = False
     d.pause = False
+
+    #threading test
+    d.serialThread = threading.Thread(target=parallel,name="FPGA_SERIAL",args=[d],daemon=True)
+    d.threadQueue = queue.Queue()
+    # d.serialThread.start()
+
+def metToCal(d,workout):
+    lbToKg = 0.45359
+    #calories per second burned
+    return d.workoutMET[workout]*0.0175*(lbToKg*d.weight)/60
 
 def drawMain(d):
     if(d.newScreen):
@@ -119,24 +153,47 @@ def updateTimeText(d,newSet,timeTextResumePause):
 def updateBreakString(d):
     breakStr = "Next set in "+str(d.breakTime)+" seconds     "
     if(d.breakTime==1):
-        breakStr = "Next set in "+str(d.breakTime)+" second      "
-    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.06))
-    breakText = Text(breakStr,textLoc,60,color.red,topmode=True)
+        breakStr = "Next set in "+str(d.breakTime)+" second        "
+    textLoc = (int(d.WINDOW_WIDTH*0.75), int(d.WINDOW_HEIGHT*0.12))
+    breakText = Text(breakStr,textLoc,60,color.red)
     breakText.draw(d)
 
 def updateResumeTimeText(d):
     resumeStr = "Resuming in "+str(d.resumeFromPause)+" seconds     "
     if(d.resumeFromPause==1):
-        resumeStr = "Resuming in "+str(d.resumeFromPause)+" second      "
+        resumeStr = "Resuming in "+str(d.resumeFromPause)+" second        "
     elif(d.resumeFromPause<0):
         resumeStr = (len(resumeStr)*2)*" "
-    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.06))
-    resumeText = Text(resumeStr,textLoc,60,color.red,topmode=True)
+    textLoc = (int(d.WINDOW_WIDTH*0.75), int(d.WINDOW_HEIGHT*0.12))
+    resumeText = Text(resumeStr,textLoc,60,color.red)
     resumeText.draw(d)
 
+def updateCalText(d,workout,reset):
+    if(not reset):
+        d.calBurned += metToCal(d,workout)
+    calStr = '{0:.1f}'.format(d.calBurned)+" Cal  "
+    textLoc = (int(d.WINDOW_WIDTH*0.025), int(d.WINDOW_HEIGHT*0.23))
+    calText = Text(calStr,textLoc,35,color.black,topmode=True)
+    calText.draw(d)
+
+def updateHRText(d,workout):
+    #220 is max heart rate for new born
+    heartRateReserve = 220-d.age
+    #64 is assumed heart rate rest on average
+    heartRate = heartRateReserve*d.workoutHRR[workout]+64
+    lowHeart = str(int(0.95*heartRate))
+    highHeart = str(int(1.05*heartRate))
+    hrStr = lowHeart+"-"+highHeart+" BPM   " 
+    textLoc = (int(d.WINDOW_WIDTH*0.15), int(d.WINDOW_HEIGHT*0.23))
+    hrText = Text(hrStr,textLoc,35,color.black,topmode=True)
+    hrText.draw(d)    
 
 def drawWorkout(d):
     if(not d.pause):
+        #test threading
+        # if(not data.threadQueue.empty()):
+        #     print(data.threadQueue.get())
+
         currentWorkout = d.workoutSets[d.workoutFocus][d.currSet-1]
         timeTextResumePause = True
         if(d.newScreen):
@@ -145,23 +202,27 @@ def drawWorkout(d):
                 d.currWorkoutFrame = 0
                 d.currentRep = 1 
                 timeTextResumePause = False
-            
-            if(d.breakTime>=0):
-                d.currWorkoutFrame = 0 
 
             d.screen.fill(color.white)
+
+            if(d.breakTime>=0):
+                updateHRText(d,"rest")
+                d.currWorkoutFrame = 0 
+            else:
+                updateHRText(d,currentWorkout)
 
             #initialize text
             updateRepText(d)
             updateWorkoutText(d,currentWorkout)
             updateSetText(d)
             updateTimeText(d,True,timeTextResumePause)
+            updateCalText(d,currentWorkout,True)
             if(d.breakTime>0):
                 updateBreakString(d)
 
             #draw divider line
-            start_line_loc = (d.WINDOW_WIDTH*0.45,d.WINDOW_HEIGHT*0.225)
-            end_line_loc = (d.WINDOW_WIDTH*0.45,d.WINDOW_HEIGHT*0.85)
+            start_line_loc = (int(d.WINDOW_WIDTH*0.45),int(d.WINDOW_HEIGHT*0.225))
+            end_line_loc = (int(d.WINDOW_WIDTH*0.45),int(d.WINDOW_HEIGHT*0.85))
             pygame.draw.line(d.screen, color.black, start_line_loc, end_line_loc, 3)
 
             d.beginTime = pygame.time.get_ticks()
@@ -212,22 +273,30 @@ def drawWorkout(d):
                     updateRepText(d)
 
                 #update model image
-                modelLocation = (d.WINDOW_WIDTH*0.02, d.WINDOW_HEIGHT*0.3)
+                modelLocation = (int(d.WINDOW_WIDTH*0.02), int(d.WINDOW_HEIGHT*0.3))
                 d.screen.blit(pygame.image.load(d.IMAGE_DIR+"{:03n}".format(d.currWorkoutFrame)+'.gif'),modelLocation)
                 d.currWorkoutFrame+=1
 
-        #change timer if second has passed
+        #timer based (time left, next set break, resume, calories burned)
         currTime = pygame.time.get_ticks()
         if(currTime-d.beginTime>1000):
+            #not resuming from pause
             if(d.resumeFromPause<0):
+                #decrement time remaining
                 updateTimeText(d,False,False)
+                #if on a break
                 if(d.breakTime>0):
                     d.breakTime-=1
+                    #break over
                     if(d.breakTime==0):
                         d.newScreen = True
                         d.breakTime = -1
                     else:
                         updateBreakString(d)
+                    updateCalText(d,"rest",False)
+                else:
+                    updateCalText(d,currentWorkout,False)
+            #resuming from pause
             else:
                 d.resumeFromPause-=1
                 if(d.resumeFromPause==0):
