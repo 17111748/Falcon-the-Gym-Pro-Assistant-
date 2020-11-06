@@ -63,8 +63,8 @@ XUartLite UartLite;		/* Instance of the UartLite Device */
 #define NUM_DIRECTIONS 4
 #define NUM_JOINTS 1
 
-int lowerMask[3] = {17, 87, 160};
-int upperMask[3] = {29, 133, 246};
+int lowerMask[8][3] = {{17, 87, 160},  {155, 124, 150}, {171, 55, 87},  {38, 65, 165},  {239, 64, 133},  {47, 45, 111}, {125, 52, 127}, {210, 30, 170}};
+int upperMask[8][3] = {{29, 133, 246}, {160, 140, 225}, {192, 94, 157}, {45, 100, 253}, {252, 137, 216}, {60, 74, 240}, {141, 78, 243}, {242, 82, 250}};
 int directions[4][2] = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
 
 struct Stack {
@@ -104,22 +104,25 @@ int main()
     xil_printf("loaded image\n\r");
 
 	// Repeat the following for each of the various body locations
-	for(int i = 0; i < NUM_JOINTS; i++) {
+	for(int joint = 0; joint < NUM_JOINTS; joint++) {
 
 		// Generating Binary Mask
 		unsigned char* binMaskPtr = 0xC000E100;
-		createBinaryMask(imagePtr, binMaskPtr);
+		createBinaryMask(imagePtr, binMaskPtr, joint);
 
-		// Performing Erosion
-		unsigned char* erosMaskPtr = 0xC0012C00;
-		erode(binMaskPtr, erosMaskPtr);
+		// Performing 2 sets of Dilations
+		unsigned char* dilMaskPtr1 = 0xC0012C00;
+		dilate(binMaskPtr, dilMaskPtr1);
 
-		// Performing Dilation
-		unsigned char* dilMaskPtr = 0xC0017700;
-		dilate(erosMaskPtr, dilMaskPtr);
+		unsigned char* dilMaskPtr2 = 0xC0017700;
+		dilate(dilMaskPtr1, dilMaskPtr2);
+
+		// Performing Erosion 
+		unsigned char* erosMaskPtr = 0xC001C200;
+		erode(dilMaskPtr2, erosMaskPtr)
 
 		// Calculate Result
-		getCenter(dilMaskPtr);
+		getCenter(erosMaskPtr);
 	}
 
     xil_printf("done\n\r");
@@ -151,12 +154,21 @@ void printImage(unsigned char* src) {
 }
 
 // Function generates a binary mask with the bytes stored at src and loads into dest
-void createBinaryMask(unsigned char* src, unsigned char* dest) {
+void createBinaryMask(unsigned char* src, unsigned char* dest, int joint) {
+
+	// Gathering the bounds 
+	int lowerHueBound = lowerMask[joint][0];
+	int lowerSatBound = lowerMask[joint][1];
+	int lowerValBound = lowerMask[joint][2];
+	int higherHueBound = upperMask[joint][0];
+	int higherSatBound = upperMask[joint][1];
+	int higherValBound = upperMask[joint][2];
+
 	for(int i = 0; i < 160 * 120; i++) {
 		u8 hue = src[3 * i];
 		u8 saturation = src[3 * i + 1];
 		u8 value = src[3 * i + 2];
-		if(hue >= lowerMask[0] && saturation >= lowerMask[1] && value >= lowerMask[2] && hue <= upperMask[0] && saturation <= upperMask[1] && value <= upperMask[2]) {
+		if(hue >= lowerHueBound && saturation >= lowerSatBound && value >= lowerValBound && hue <= higherHueBound && saturation <= higherSatBound && value <= higherValBound) {
 			dest[i] = 1;
 		}
 		else {
@@ -278,6 +290,7 @@ int* maxAreaHistogram(unsigned char* histogram, int *answer) {
 
 // Function finds the center of the biggest rectangle that exists and prints to UART
 void getCenter(unsigned char* image) {
+	
 	// Implementing maxRectangle(src) and then printing result;
 	int result[4];
 	maxAreaHistogram(image, &result);
@@ -305,5 +318,6 @@ void getCenter(unsigned char* image) {
         }
     }
 
+	// Printing out the final location of the result
 	xil_printf("%d, %d", maxRow - (maxHeight/2), maxCol + (maxWidth/2));
 }
