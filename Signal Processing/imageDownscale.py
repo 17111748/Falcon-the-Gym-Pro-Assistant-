@@ -12,6 +12,8 @@ def writeFile(matrix, path):
     for row in matrix: 
         ans = ""
         for col in row: 
+            if(col == 1):
+                print("bob")
             ans += str(col) + ", "
         ans += "\n"
         string += ans
@@ -37,8 +39,8 @@ def printMat(matrix):
         print(row)
     print("\n\n")
 
-originalPath = 'images/lungeForward.png'
-downscalePath = 'images/lungeForward_160x120.png'
+originalPath = 'images/pushupDown.png'
+downscalePath = 'images/pushupDown_160x120.png'
 trackDownscale = 'images/track_pushupDown_160x120.png'
 
 
@@ -74,15 +76,15 @@ for temp_r in range(resized_row):
         r = temp_c
         if abs(r - row) < (size) and abs(c - col) < (size): 
             
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r, c]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+1, c]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r, c+1]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r-1, c-1]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+1, c+1]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+2, c+2]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+3, c+3]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+4, c+4]))
-            print(str(r) + "x" + str(c+1) + ": " + str(converted_pixel[r, c+1]))
+            # print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r, c]))
+            # print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+1, c]))
+            # print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r, c+1]))
+            # print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r-1, c-1]))
+            # print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+1, c+1]))
+            # print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+2, c+2]))
+            # print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+3, c+3]))
+            # print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+4, c+4]))
+            # print(str(r) + "x" + str(c+1) + ": " + str(converted_pixel[r, c+1]))
             done = True
             track_image_pixels[r, c] = (255, 10, 10)#(255, 10, 10)
             track_image_pixels[r+1, c] = (255, 10, 10)
@@ -163,9 +165,9 @@ bodyHSVBounds = [(shoulderOrangeL, shoulderOrangeU), (elbowPeachL, elbowPeachU),
                  (kneeRedL, kneeRedU), (kneeOtherGreenL, kneeOtherGreenU), 
                  (ankleBlueL, ankleBlueU), (ankleOtherPinkL, ankleOtherPinkU)]
 
-            
-# lowerMask = kneeRedL
-# upperMask = kneeRedU
+
+
+
 
 def jointTracking(lowerMask, upperMask): 
     imageMask = []
@@ -179,41 +181,26 @@ def jointTracking(lowerMask, upperMask):
         imageMask.append(imageRowMask)
     return imageMask
 
-# lowerMask = shoulderOrangeL
-# upperMask = shoulderOrangeU
-# imageMask = jointTracking(lowerMask, upperMask)
-# outputImage(temp_image, imageMask, "images/test.png")
 
 def erosion(imageMask):
-    # imageMask = [[1, 0, 1, 0, 0], [0, 1, 1, 1, 0], [1, 1, 1, 1, 1], [0, 1, 1, 1, 0], [0, 0, 1, 0, 0]]
-
-    # printMat(imageMask)
-    # resized_col = 5
-    # resized_row = 5
-
-
     # Morphological Transform (Dilation, Erosion) to get rid of noise 
     directions = [[-1, 0], [0, -1], [1, 0], [0, 1]]
     # directions2 = [[-1, 0], [0, -1], [1, 0], [0, 1], [1,1], [-1, 1], [1, -1], [-1,-1], [0, 2], [0, -2], [-2, 0], [2, 0]]
     erosionMask = []
     for row in range(resized_row):
-        erosionMaskRow = []
+        erosionMaskRow = [0] * resized_col
         for col in range(resized_col):
-            colorIn = True 
+            erosionMaskRow[col] = 1
             if (imageMask[row][col] == 0): 
-                colorIn = False 
+                erosionMaskRow[col] = 0
             else:
                 for direction in directions: 
                     x = row + direction[0]
                     y = col + direction[1]
                     if (x < 0 or x >= resized_row or y < 0 or y >= resized_col):
-                        colorIn = False 
+                        erosionMaskRow[col] = 0
                     elif (imageMask[x][y] == 0):
-                        colorIn = False 
-            if (colorIn):
-                erosionMaskRow.append(1)
-            else: 
-                erosionMaskRow.append(0)
+                        erosionMaskRow[col] = 0 
         erosionMask.append(erosionMaskRow)
     return erosionMask          
 
@@ -228,6 +215,7 @@ def dilation(erosionMask):
                     x = row + direction[0]
                     y = col + direction[1]
                     if (x >= 0 and x < resized_row and y >= 0 and y < resized_col and erosionMask[x][y] == 1):
+                        # print(str(x), str(y), str(row), str(col))
                         imageMask[row][col] = 1
                         break 
     return imageMask
@@ -373,36 +361,39 @@ def getCenter(imageMask, resized_row, resized_col):
     return (row, col)
 
 
-# For Venkata
+def testing(imageMask):
+    for i in range(len(imageMask)):
+        for j in range(len(imageMask[0])):
+            if(imageMask[i][j] == 1):
+                print(str(i) + ", " + str(j))
+
 def mainFunction(bodyHSVBounds): 
     resized_row = 120
     resized_col = 160 
     positions = []
     count = 0
-    # for bodyPart in bodyHSVBounds: 
-    lowerMask = bodyHSVBounds[0][0]
-    upperMask = bodyHSVBounds[0][1]
+    for bodyPart in bodyHSVBounds: 
+        if count == 1:
+            break 
+        lowerMask = bodyPart[0]
+        upperMask = bodyPart[1]
+        imageMask = jointTracking(lowerMask, upperMask)
+        
+        # imageMask = dilation(imageMask)
+        # imageMask = dilation(imageMask)
+        # imageMask = erosion(imageMask)
 
+        imageMask = erosion(imageMask)
 
-    imageMask = jointTracking(lowerMask, upperMask)
-    writeFile(imageMask, "joint.txt")
+        # writeFile(imageMask, "erosion.txt")
+        imageMask = dilation(imageMask)
 
-
-    # imageMask = erosion(imageMask)
-    # writeFile(imageMask, "erosion.txt")
-
-
-    imageMask = dilation(imageMask)
-    writeFile(imageMask, "dilation.txt")
-    
-    # imageMask = erosion(imageMask)
-    (row, col) = getCenter(imageMask, resized_row, resized_col)
-    positions.append((row, col))
-    count += 1
+        (row, col) = getCenter(imageMask, resized_row, resized_col)
+        positions.append((row, col))
+        count += 1
     
     return positions
 
-mainFunction(bodyHSVBounds)
 
 
 # def mainFunction(bodyHSVBounds): 
@@ -414,10 +405,10 @@ mainFunction(bodyHSVBounds)
 #         lowerMask = bodyPart[0]
 #         upperMask = bodyPart[1]
 #         imageMask = jointTracking(lowerMask, upperMask)
+        
 #         imageMask = dilation(imageMask)
 #         imageMask = dilation(imageMask)
 #         imageMask = erosion(imageMask)
-#         # imageMask = erosion(imageMask)
 
 #         (row, col) = getCenter(imageMask, resized_row, resized_col)
 #         positions.append((row, col))
@@ -426,46 +417,45 @@ mainFunction(bodyHSVBounds)
 #     return positions
 
 
-# positions = mainFunction(bodyHSVBounds)
+positions = mainFunction(bodyHSVBounds)
 
 
-# # 133x98 Up Position
-# # 132x99 Down Position 
 
-# print(positions)
 
-# #positions.pop(7)
-# #positions.pop(5)
-# # positions.pop(2)
-# # positions.pop(1)
-# # positions.pop(0)
-# track_image = Image.open(downscalePath)
-# track_image_pixels = track_image.load()
+print(positions)
 
-# imageMask = []
-# for r in range(resized_row):
-#     temp = [0] * resized_col
-#     imageMask.append(temp)
+# positions.pop(7)
+# positions.pop(5)
+# positions.pop(2)
+# positions.pop(1)
+# positions.pop(0)
 
-# for posIndex in range(len(positions)):
-#     pos = positions[posIndex]
-#     row = int(pos[0])
-#     col = int(pos[1])
-#     size = 2
-#     done = False
+track_image = Image.open(downscalePath)
+track_image_pixels = track_image.load()
 
-#     for r in range(resized_row):
-#         for c in range(resized_col):
-#             if abs(r - row) < (size) and abs(c - col) < (size): 
-#                 # print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r, c]))
-#                 #print(str(r) + "x" + str(c+1) + ": " + str(converted_pixel[r, c+1]))
-#                 done = True
-#                 track_image_pixels[c, r] = (100, 100, 255) #(255, 10, 10)
-#         if(done):
-#             # print("break")
-#             done = False
+imageMask = []
+for r in range(resized_row):
+    temp = [0] * resized_col
+    imageMask.append(temp)
+
+for posIndex in range(len(positions)):
+    pos = positions[posIndex]
+    row = int(pos[0])
+    col = int(pos[1])
+    size = 2
+    done = False
+
+    for r in range(resized_row):
+        for c in range(resized_col):
+            if abs(r - row) < (size) and abs(c - col) < (size): 
+                # print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r, c]))
+                #print(str(r) + "x" + str(c+1) + ": " + str(converted_pixel[r, c+1]))
+                done = True
+                track_image_pixels[c, r] = (100, 100, 255) #(255, 10, 10)
+        if(done):
+            done = False
     
 
-# # outputImage(temp_image, imageMask, "images/testFinal.jpg")
-# print(positions)
-# track_image.save('images/findPixels.png')
+# outputImage(temp_image, imageMask, "images/testFinal.jpg")
+print(positions)
+track_image.save('images/findPixels.png')
