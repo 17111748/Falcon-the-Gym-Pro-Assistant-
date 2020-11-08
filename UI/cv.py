@@ -1,16 +1,30 @@
-import sys, pygame, cv2, time, threading, queue
+import sys, pygame, cv2, time, threading, queue, serial
+from PIL import Image
 from structs import *
 from colors import *
 
 def parallel(d):
-    counter = 0 
-    while(True):
-        d.threadQueue.put(counter)
-        counter+=1
-        time.sleep(2)
+    # counter = 0 
+    # while(True):
+    #     d.threadQueue.put(counter)
+    #     counter+=1
+    #     time.sleep(2)
+
+    resized_col = 160
+    resized_row = 120
+
+    original_image = Image.open(d.test_image)
+    original_image_pixels = original_image.load()
+
+    new_image = original_image.resize((resized_col, resized_row))
+    converted_image = new_image.convert('HSV')
+    # converted_pixel = converted_image.load()
+    byte_arr = converted_image.tobytes()
 
 def init(d):
     #constants
+    d.test_image = '/Users/vishalbaskar/OneDrive/Documents/School/College/2020-2021/18-500/Falcon-the-Gym-Pro-Assistant-/UI/images/124465994_2795741760679596_4845265792916207480_n.png'
+
     d.FRAME_FREQUENCY = 100
     d.WINDOW_WIDTH = 1280
     d.WINDOW_HEIGHT = int(d.WINDOW_WIDTH/1.6)
@@ -52,10 +66,10 @@ def init(d):
         "u": "Push-Ups"
     }
     d.workoutFocus = "core"
-    d.currSet = 1
+    d.currSet = 10
 
     d.currWorkoutFrame = 0
-    d.currentRep = 1
+    d.currentRep = 3
 
     d.timeRemaining = -1
     d.beginTime = pygame.time.get_ticks()
@@ -68,8 +82,8 @@ def init(d):
 
     d.captureFrame = {
         "c": 50, 
-        "l": 10,
-        "u": 10
+        "l": 50,
+        "u": 50
     }
 
     d.workoutHRR = {
@@ -188,9 +202,10 @@ def updateHRText(d,workout):
     hrText = Text(hrStr,textLoc,35,color.black,topmode=True)
     hrText.draw(d)    
 
+
 def drawWorkout(d):
     if(not d.pause):
-        #test threading
+        # test threading
         # if(not data.threadQueue.empty()):
         #     print(data.threadQueue.get())
 
@@ -244,6 +259,7 @@ def drawWorkout(d):
         if(d.currWorkoutFrame == d.captureFrame[currentWorkout] and d.breakTime<0 and d.resumeFromPause<0):
             #TODO
             toDownsize = frame.swapaxes(0,1)
+            print('photo captured')
             #need to downsize to 160x120
             #send to UART in a seperate thread?
 
