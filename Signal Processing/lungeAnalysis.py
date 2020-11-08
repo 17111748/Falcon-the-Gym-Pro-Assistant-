@@ -2,7 +2,6 @@ import numpy as np
 
 perpendicular = 90 
 parallel = 180 
-lungeStartPos = 160
 
 # bodyParts[0] = Shoulder
 # bodyParts[1] = Elbow 
@@ -25,11 +24,11 @@ class LungeResult:
     def processResult(self): 
         self.feedback = [] 
         if (self.check1): 
-            self.feedback.append("Straighten your Back")
+            self.feedback.append("Front Knee too Forward")
         if (self.check2): 
-            self.feedback.append("Move Front Legs Forward")
+            self.feedback.append("Go Lower")
         if (self.check3):
-            self.feedback.append("Back Knees Should be Lower")
+            self.feedback.append("Back Legs too far Back")
 
     def getResult(self): 
         self.check1 = False 
@@ -40,13 +39,17 @@ class LungeResult:
 
 class LungePostureAnalysis:
 
-    def __init__(self, groundList):
+    def __init__(self):
         self.lunge = LungeResult()
-        self.groundList = groundList 
 
     # Helper Functions 
-    def getSlope(self, pos1, pos2): 
-        return -(pos2[1] - pos1[1])/(pos2[0] - pos1[0])
+    def getSlope(self, pos0, pos1): 
+        height = 120 
+        y1 = height - pos1[0]
+        x1 = pos1[1]
+        y0 = height - pos0[0]
+        x0 = pos0[1]
+        return (y1-y0)/(x1-x0)
 
     def getAngle(self, Point1, MidPoint, Point2):
         a = np.array(Point1)
@@ -67,7 +70,14 @@ class LungePostureAnalysis:
     def sameAngle(self, angle1, angle2, threshold = 0.1): 
         return abs(angle1 - angle2) < threshold 
 
+    def samePos(self, pos0, pos1, threshold = 0):
+        return abs(pos0 - pos1) <= threshold
 
+    def lessThan(self, pos0, pos1, threshold = 0): 
+        return (pos0 - threshold) <= pos1  
+    
+    def greaterThan(self, pos0, pos1, threshold = 0): 
+        return pos0 >= (pos1 - threshold)  
 
     # Line 1: Hip - DefaultKnee 
     # Line 2: DefaultKnee - DefaultAnkle
@@ -90,43 +100,102 @@ class LungePostureAnalysis:
             otherAnkle = bodyParts[6]
 
         line1Slope = self.getSlope(hip, defaultKnee)
-        line2Slope = self.getSlope(defaultKnee, defaultAnkle)
+        # line2Slope = self.getSlope(defaultKnee, defaultAnkle)
         line3Slope = self.getSlope(hip, otherKnee)
-        line4Slope = self.getSlope(otherKnee, otherAnkle)
-        line5Slope = self.getSlope(hip, shoulder)
+        # line4Slope = self.getSlope(otherKnee, otherAnkle)
 
-        angleHip = self.getAngle(shoulder, hip, defaultKnee)
-        angleHipOther = self.getAngle(shoulder, hip, otherKnee)
-        angleDefaultKnee = self.getAngle(hip, defaultKnee, defaultAnkle)
-        angleOtherKnee = self.getAngle(hip, otherKnee, otherAnkle)
+        # angleHip = self.getAngle(shoulder, hip, defaultKnee)
+        # angleHipOther = self.getAngle(shoulder, hip, otherKnee)
+        # angleDefaultKnee = self.getAngle(hip, defaultKnee, defaultAnkle)
+        # angleOtherKnee = self.getAngle(hip, otherKnee, otherAnkle)
 
+        frontLegSlope = -0.75
+        backLegSlope = 2
+
+        # # Front Leg too forward
+        # print(defaultKnee[1])
+        # print(defaultAnkle[1])
+        # print(self.samePos(defaultKnee[1], defaultAnkle[1], 2))
+        # print(defaultKnee[1] > defaultAnkle[1])
+
+        # # Go Lower
+        # print(otherAnkle[0])
+        # print(otherKnee[0])
+        # print(line1Slope)
+        # print(frontLegSlope)
+        # print(self.lessThan(otherAnkle[0], otherKnee[0], -1))
+        # print(self.greaterThan(line1Slope, frontLegSlope, 0.1))
         
-        # TODO: Make sure that the angle is the y value where ankle touches 
-        if not (self.sameSlope(line5Slope, line3Slope) and self.sameAngle(angleHipOther, parallel)):
-            self.lunge.check1 = True 
-        if not (self.sameAngle(angleDefaultKnee, perpendicular) and self.sameAngle(angleHip, perpendicular) and self.sameSlope(0, line1Slope)):
-            self.lunge.check2 = True 
-        if not (self.sameSlope(line4Slope, 0) and self.sameAngle(angleOtherKnee, perpendicular)):
+        # # Back Legs Too Backward
+        # print(line3Slope)
+        # print(backLegSlope)
+        # print(self.greaterThan(line3Slope, backLegSlope))
+        # print(self.sameAngle(angleOtherKnee, perpendicular))
+
+        if not (self.samePos(defaultKnee[1], defaultAnkle[1], 5)):
+            if (defaultKnee[1] > defaultAnkle[1]):
+                self.lunge.check1 = True
+
+        if not (self.lessThan(otherAnkle[0], otherKnee[0], -1) and self.greaterThan(line1Slope, frontLegSlope, 0.1)):
+            self.lunge.check2 = True
+
+        if not (self.greaterThan(line3Slope, backLegSlope)):
             self.lunge.check3 = True 
+
         
         self.lunge.processResult() 
 
 
     def getResult(self): 
         return self.lunge.getResult()
-        
-    
-groundList = [(0,0), (0,0)]
-bodyParts = [(142,98), (131,99), (133,114), (116,105), (65,105), (0,0), (39,107), (0,0)]
-upBodyParts = [(134.0, 82.5), (133, 98), (135.5, 112.0), (103.5, 78.5), (59.0, 99.0), (93.0, 50.0), (34.0, 107.0), (59.5, 97.0)]
 
-lunge = LungePostureAnalysis(groundList)
 
-lunge.feedbackCalculation(bodyParts)
+
+#############################################################
+
+
+forwardForward = [(0.0, 0.0), (29.5, 80.5), (15.5, 87.5), (49.5, 88.5), (65.0, 127.5), (96.5, 66.5), (84.5, 118.5), (92.0, 48.5)]  
+perfectForward = [(0.0, 0.0), (17.5, 72.5), (0.0, 0.0), (38.0, 85.0), (60.5, 122.5), (87.5, 61.0), (82.0, 118.0), (88.0, 42.0)]
+backwardForward = [(27.5, 95.5), (32.5, 92.5), (20.5, 108.0), (53.0, 99.0), (64.0, 138.5), (95.0, 67.0), (84.0, 126.5), (90.5, 48.0)]
+
+
+forwardBackward = [(0.0, 0.0), (31.5, 74.5), (21.5, 82.5), (53.5, 84.5), (94.0, 67.0), (70.5, 115.5), (91.0, 46.5), (88.5, 108.5)]
+perfectBackward = [(0.0, 0.0), (23.5, 67.5), (11.5, 81.0), (45.5, 78.0), (86.5, 60.0), (69.0, 110.5), (87.5, 38.0), (88.0, 105.5)]
+backwardBackward = [(0.0, 0.0), (0.0, 0.0), (25.5, 95.5), (58.0, 93.5), (95.0, 68.5), (70.5, 125.5), (91.5, 48.0), (86.5, 118.0)]
+
+
+
+
+lunge = LungePostureAnalysis()
+
+lunge.feedbackCalculation(forwardForward)
 result = lunge.getResult()
-print(result)
+print("forwardForward: " + str(result))
+print("\n")
 
-print("HELLOOOOOO")
-lunge.feedbackCalculation(upBodyParts)
+lunge.feedbackCalculation(perfectForward)
 result = lunge.getResult()
-print(result)
+print("perfectForward: " + str(result))
+print("\n")
+
+lunge.feedbackCalculation(backwardForward)
+result = lunge.getResult()
+print("backwardForward: " + str(result))
+print("\n")
+
+
+
+lunge.feedbackCalculation(forwardBackward, False)
+result = lunge.getResult()
+print("forwardBackward: " + str(result))
+print("\n")
+
+lunge.feedbackCalculation(perfectBackward, False)
+result = lunge.getResult()
+print("perfectBackward: " + str(result))
+print("\n")
+
+lunge.feedbackCalculation(backwardBackward, False)
+result = lunge.getResult()
+print("backwardBackward: " + str(result))
+print("\n")

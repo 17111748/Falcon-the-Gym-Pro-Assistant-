@@ -1,5 +1,5 @@
 from PIL import Image 
-import cv2 
+# import cv2 
 import numpy as np
 import copy
 import time 
@@ -21,9 +21,6 @@ def writeFile(matrix, path):
     with open(path, "wt") as f:
         f.write(string)
 
-
-
-
 def outputImage(temp_image, imageMask, path):
     temp_pixel = temp_image.load()
 
@@ -39,10 +36,10 @@ def printMat(matrix):
         print(row)
     print("\n\n")
 
-originalPath = 'images/Nov/lungeBackward/Backward.png'
-downscalePath = 'images/Nov/lungeBackward/Perfect_160x120.png'
-trackDownscale = 'images/Nov/lungeBackward/track_Perfect.png'
-endpath = 'images/Nov/lungeBackward/findPixels.png'
+originalPath = 'images/Nov/pushUp/HandForward.png'
+downscalePath = 'images/Nov/pushUp/HandForward_160x120.png'
+trackDownscale = 'images/Nov/pushUp/track_Forward.png'
+endpath = 'images/Nov/pushUp/findPixels.png'
 
 
 time0 = time.time()
@@ -58,7 +55,6 @@ new_image.save(downscalePath)
 temp_image = Image.open(downscalePath)
 converted_image = temp_image.convert('HSV')
 converted_pixel = converted_image.load()
-time1 = time.time()
 
 
 
@@ -102,15 +98,6 @@ track_image.save(trackDownscale)
 image = converted_image
 pixels = converted_pixel
 
-
-
-# Create the Upper and Lower Bound for the mask 
-# list of the color masks: red, yellow, blue, etc... 
-maskList = []
-
-
-# Bitwise and with the mask (Convolution) 
-# positions = [(142,98), (131,99), (133,114), (116,105), (65,105), (39,107)]
 
 # 142x98 (pushupDown)
 # Lower: (17, 87, 160)
@@ -184,7 +171,6 @@ def jointTracking(lowerMask, upperMask):
 def erosion(imageMask):
     # Morphological Transform (Dilation, Erosion) to get rid of noise 
     directions = [[-1, 0], [0, -1], [1, 0], [0, 1]]
-    # directions2 = [[-1, 0], [0, -1], [1, 0], [0, 1], [1,1], [-1, 1], [1, -1], [-1,-1], [0, 2], [0, -2], [-2, 0], [2, 0]]
     erosionMask = []
     for row in range(resized_row):
         erosionMaskRow = [0] * resized_col
@@ -218,56 +204,6 @@ def dilation(erosionMask):
                         break 
     return imageMask
 
-# outputImage(temp_image, imageMask, "images/testFiltered.jpg")
-
-# Figure out the center of the pixel 
-# def max_area_histogram(histogram):
-#     stack = list() 
-#     max_area = 0
-#     maxCol = 0 
-#     width = 0 
-#     height = 0
-
-#     index = 0
-#     while (index < len(histogram)): 
-#         if (not stack) or (histogram[stack[-1]] <= histogram[index]): 
-#             stack.append(index) 
-#             index += 1
-
-#         else: 
-#             top_of_stack = stack.pop() 
-
-#             area = (histogram[top_of_stack] * 
-#                 ((index - stack[-1] - 1) 
-#                 if stack else index)) 
-
-#             if (max_area < area):
-#                 max_area = area 
-#                 height = histogram[top_of_stack]
-#                 if (stack):
-#                     maxCol = stack[-1] + 1
-#                     width = (index - stack[-1] - 1) 
-#                 else: 
-#                     maxCol = 0
-#                     width = index 
-
-
-#     while stack: 
-#         top_of_stack = stack.pop() 
-#         area = (histogram[top_of_stack] * ((index - stack[-1] - 1) if stack else index)) 
-
-#         if (max_area < area):
-#             max_area = area 
-#             height = histogram[top_of_stack]
-#             if (stack):
-#                 maxCol = stack[-1] + 1
-#                 width = (index - stack[-1] - 1) 
-#             else: 
-#                 maxCol = 0
-#                 width = index 
-
-#     return (max_area, maxCol, width, height)  
-
 def max_area_histogram(histogram):
     stack = [0] * 160
     stackIndex = -1
@@ -277,8 +213,6 @@ def max_area_histogram(histogram):
     height = 0
 
     index = 0
-
-
     while (index < len(histogram)): 
         if (stackIndex == -1) or (histogram[stack[stackIndex]] <= histogram[index]): 
             stackIndex += 1
@@ -367,17 +301,15 @@ def mainFunction(bodyHSVBounds):
     resized_col = 160 
     positions = []
     count = 0
+
+
     for bodyPart in bodyHSVBounds: 
-        
         lowerMask = bodyPart[0]
         upperMask = bodyPart[1]
         imageMask = jointTracking(lowerMask, upperMask)
-        
         imageMask = dilation(imageMask)
         imageMask = dilation(imageMask)
         imageMask = erosion(imageMask)
-
-        # imageMask = erosion(imageMask)
 
         # # writeFile(imageMask, "erosion.txt")
         # imageMask = dilation(imageMask)
@@ -420,12 +352,6 @@ positions = mainFunction(bodyHSVBounds)
 
 print(positions)
 
-# positions.pop(7)
-# positions.pop(5)
-# positions.pop(2)
-# positions.pop(1)
-# positions.pop(0)
-
 track_image = Image.open(downscalePath)
 track_image_pixels = track_image.load()
 
@@ -444,14 +370,10 @@ for posIndex in range(len(positions)):
     for r in range(resized_row):
         for c in range(resized_col):
             if abs(r - row) < (size) and abs(c - col) < (size): 
-                # print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r, c]))
-                #print(str(r) + "x" + str(c+1) + ": " + str(converted_pixel[r, c+1]))
                 done = True
                 track_image_pixels[c, r] = (100, 100, 255) #(255, 10, 10)
         if(done):
             done = False
     
-
-# outputImage(temp_image, imageMask, "images/testFinal.jpg")
-print(positions)
 track_image.save(endpath)
+
