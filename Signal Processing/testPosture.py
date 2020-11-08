@@ -5,6 +5,20 @@ from lungeAnalysis import *
 
 # Images from 'images/Nov/<workout>' 
 
+# Convert String to List of Body Parts 
+def convertString(bodyParts):
+    result = [] 
+    bodyParts = bodyParts[1:-1]
+    bodyList = bodyParts.split(", ")
+
+    for index in range(0, len(bodyList), 2):
+        row = float(bodyList[index][1:])
+        col = float(bodyList[index + 1][:-1])
+        result.append((row, col))
+
+    return result 
+
+
 # Leg Raise 
 
 perfect = [(91.5, 33.5), (96.0, 49.0), (96.0, 65.5), (88.0, 55.5), (41.5, 66.5), (46.0, 72.0), (22.0, 70.0), (27.0, 75.0)]
