@@ -58,14 +58,14 @@ XUartLite UartLite;		/* Instance of the UartLite Device */
 
 #define IMAGE_SIZE 57600
 
-#define RESIZED_ROW 160
-#define RESIZED_COL 120
+#define RESIZED_ROW 120
+#define RESIZED_COL 160
 #define NUM_DIRECTIONS 4
 #define NUM_JOINTS 1
 
-u8 lowerMask[3] = {15, 20, 64};
-u8 upperMask[3] = {180, 255, 255};
-u8 directions[4][2] = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
+int lowerMask[8][3] = {{17, 87, 160},  {155, 124, 150}, {171, 55, 87},  {38, 65, 165},  {239, 64, 133},  {47, 45, 111}, {125, 52, 127}, {210, 30, 170}};
+int upperMask[8][3] = {{29, 133, 246}, {160, 140, 225}, {192, 94, 157}, {45, 100, 253}, {252, 137, 216}, {60, 74, 240}, {141, 78, 243}, {242, 82, 250}};
+int directions[4][2] = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
 
 struct Stack {
     int top;
@@ -78,6 +78,7 @@ void storeImage(unsigned char* dest);
 void binaryMask(unsigned char* src, unsigned char* dest);
 void erode(unsigned char* src, unsigned char* dest);
 void dilate(unsigned char* src, unsigned char* dest);
+void getCenter(unsigned char* src);
 
 int main()
 {
@@ -100,19 +101,28 @@ int main()
     unsigned char* imagePtr = XPAR_BRAM_0_BASEADDR; // Base addr of the BRAM block
 	storeImage(imagePtr);
 
+    xil_printf("loaded image\n\r");
+
 	// Repeat the following for each of the various body locations
-	for(int i = 0; i < NUM_JOINTS; i++) {
+	for(int joint = 0; joint < NUM_JOINTS; joint++) {
+
 		// Generating Binary Mask
 		unsigned char* binMaskPtr = 0xC000E100;
-		createBinaryMask(imagePtr, binMaskPtr);
+		createBinaryMask(imagePtr, binMaskPtr, joint);
 
-		// Performing Erosion
-		unsigned char* erosMaskPtr = 0xC0012C00;
-		erode(binMaskPtr, erosMaskPtr);
+		// Performing 2 sets of Dilations
+		unsigned char* dilMaskPtr1 = 0xC0012C00;
+		dilate(binMaskPtr, dilMaskPtr1);
 
-		// Performing Dilation
-		unsigned char* dilMaskPtr = 0xC0017700;
-		dilate(erosMaskPtr, dilMaskPtr)
+		unsigned char* dilMaskPtr2 = 0xC0017700;
+		dilate(dilMaskPtr1, dilMaskPtr2);
+
+		// Performing Erosion 
+		unsigned char* erosMaskPtr = 0xC001C200;
+		erode(dilMaskPtr2, erosMaskPtr)
+
+		// Calculate Result
+		getCenter(erosMaskPtr);
 	}
 
     xil_printf("done\n\r");
@@ -131,13 +141,34 @@ void storeImage(unsigned char* dest) {
 	}
 }
 
+void printImage(unsigned char* src) {
+	for(int row = 0; row < RESIZED_ROW; row++) {
+		for(int col = 0; col < RESIZED_COL; col++) {
+			int ind = row * RESIZED_COL + col;
+			if(src[ind] == 1) {
+				xil_printf("%d, %d\n\r", row, col);
+			}
+//			xil_printf("%d ", src[ind]);
+		}
+	}
+}
+
 // Function generates a binary mask with the bytes stored at src and loads into dest
-void createBinaryMask(unsigned char* src, unsigned char* dest) {
+void createBinaryMask(unsigned char* src, unsigned char* dest, int joint) {
+
+	// Gathering the bounds 
+	int lowerHueBound = lowerMask[joint][0];
+	int lowerSatBound = lowerMask[joint][1];
+	int lowerValBound = lowerMask[joint][2];
+	int higherHueBound = upperMask[joint][0];
+	int higherSatBound = upperMask[joint][1];
+	int higherValBound = upperMask[joint][2];
+
 	for(int i = 0; i < 160 * 120; i++) {
 		u8 hue = src[3 * i];
 		u8 saturation = src[3 * i + 1];
 		u8 value = src[3 * i + 2];
-		if(hue >= lowerMask[0] && saturation >= lowerMask[1] && value >= lowerMask[2] && hue <= upperMask[0] && saturation <= upperMask[1] && value <= upperMask[2]) {
+		if(hue >= lowerHueBound && saturation >= lowerSatBound && value >= lowerValBound && hue <= higherHueBound && saturation <= higherSatBound && value <= higherValBound) {
 			dest[i] = 1;
 		}
 		else {
@@ -150,7 +181,7 @@ void createBinaryMask(unsigned char* src, unsigned char* dest) {
 void erode(unsigned char* src, unsigned char* dest) {
 	for(int i = 0; i < RESIZED_ROW; i++) {
 		for(int j = 0; j < RESIZED_COL; j++) {
-			int ind = i * 120 + j;
+			int ind = i * RESIZED_COL + j;
 			dest[ind] = 1;
 			if (src[ind] == 0) {
 				dest[ind] = 0;
@@ -162,7 +193,7 @@ void erode(unsigned char* src, unsigned char* dest) {
 					if(x < 0 || x >= RESIZED_ROW || y < 0 || y >= RESIZED_COL) {
 						dest[ind] = 0;
 					}
-					else if(src[ind] == 0) {
+					else if(src[x * RESIZED_COL + y] == 0) {
 						dest[ind] = 0;
 					}
 				}
@@ -176,12 +207,13 @@ void dilate(unsigned char* src, unsigned char* dest) {
 	for(int row = 0; row < RESIZED_ROW; row++) {
 		for(int col = 0; col < RESIZED_COL; col++) {
 			int ind = row * RESIZED_COL + col;
-			dest[ind] = 0;
+			dest[ind] = src[ind];
 			if(src[ind] == 0) {
 				for(int direction = 0; direction < NUM_DIRECTIONS; direction++) {
 					int x = row + directions[direction][0];
 					int y = col + directions[direction][1];
-					if (x >= 0 && x < RESIZED_ROW && y >= 0 && y < RESIZED_COL && src[ind] == 1) {
+					if (x >= 0 && x < RESIZED_ROW && y >= 0 && y < RESIZED_COL && src[x * RESIZED_COL + y] == 1) {
+//						xil_printf("%d, %d, %d, %d\n\r", x, y, row, col);
 						dest[ind] = 1;
 						break;
 					}
@@ -191,125 +223,101 @@ void dilate(unsigned char* src, unsigned char* dest) {
 	}
 }
 
-//// C program for array implementation of stack
-//
-//// function to create a stack of given capacity. It initializes size of
-//// stack as 0
-//struct Stack* createStack(unsigned capacity)
-//{
-//    struct Stack* stack = (struct Stack*)malloc(sizeof(struct Stack));
-//    stack->capacity = capacity;
-//    stack->top = -1;
-//    stack->array = (int*)malloc(stack->capacity * sizeof(int));
-//    return stack;
-//}
-//
-//// Stack is full when top is equal to the last index
-//int isFull(struct Stack* stack)
-//{
-//    return stack->top == stack->capacity - 1;
-//}
-//
-//// Stack is empty when top is equal to -1
-//int isEmpty(struct Stack* stack)
-//{
-//    return stack->top == -1;
-//}
-//
-//// Function to add an item to stack.  It increases top by 1
-//void push(struct Stack* stack, int item)
-//{
-//    if (isFull(stack))
-//        return;
-//    stack->array[++stack->top] = item;
-//    printf("%d pushed to stack\n", item);
-//}
-//
-//// Function to remove an item from stack.  It decreases top by 1
-//int pop(struct Stack* stack)
-//{
-//    if (isEmpty(stack))
-//        return INT_MIN;
-//    return stack->array[stack->top--];
-//}
-//
-//// Function to return the top from stack without removing it
-//int peek(struct Stack* stack)
-//{
-//    if (isEmpty(stack))
-//        return INT_MIN;
-//    return stack->array[stack->top];
-//}
-//
-//
-//
-//// Call getCenter then it'll call maxRectangle
-//
-//int[] maxAreaHistogram(int[] histogram, int resized_col) {
-//    struct Stack* stack = createStack(resized_col);
-//    int maxArea = 0;
-//    int maxCol = 0;
-//    int width = 0;
-//    int height = 0;
-//
-//    int index = 0;
-//    while(index < resized_col) {
-//        if(isEmpty(stack) || (histogram[peek(stack)] <= histogram[index])) {
-//            push(stack, index);
-//            index += 1;
-//        }
-//        else {
-//            top_of_stack = pop(stack);
-//
-//            area = histogram[top_of_stack] * (isEmpty(stack) ? index : index - peek(stack) - 1);
-//            if (maxArea < area) {
-//                maxArea = area;
-//                height = histogram[top_of_stack];
-//                if(!isEmpty(stack)) {
-//                    maxCol = peek(stack) + 1;
-//                    width = (index - peek(stack) - 1)
-//                }
-//                else {
-//                    maxCol = 0;
-//                    width = index;
-//                }
-//            }
-//
-//        }
-//    }
-//}
-//
-//
-//
-//// Result[] = [maxArea, maxcol, maxWidth, maxHeight]
-//int[] maxRectangle(int[][] image, int resized_row, int resized_col) {
-//    int[] result = maxAreaHistogram(image[0], resized_col);
-//    int maxRow = 0;
-//
-//    for(int i = 1; i < resized_row; i++) {
-//        for(int j = 0; j < resized_col; j++) {
-//            if (image[i][j]) {
-//                image[i][j] += image[i-1][j];
-//
-//                int[] temp_result = maxAreaHistogram(image[i], resized_col);
-//                if(temp_result[0] > result[0]) {
-//                    result = temp_result;
-//                    maxRow = i
-//                }
-//            }
-//        }
-//    }
-//
-//    return result;
-//}
-//
-//// Returns [row, col] (Wrapper Function)
-//int[] getCenter(int[][]imageMask, int resized_row, int resized_col) {
-//    int[] result = maxRectangle(imageMask, resized_row, resized_col);
-//
-//    int [2] answer;
-//    answer[0] = result[0] - (result[3]/2);
-//    answer[1] = result[1] + (result[2]/2);
-//
-//    return answer;
-//}
+
+int* maxAreaHistogram(unsigned char* histogram, int *answer) {
+	int stack[RESIZED_COL];
+	int stackIndex = -1;
+    int maxArea = 0;
+    int maxCol = 0;
+    int width = 0;
+    int height = 0;
+
+    int index = 0;
+
+    while(index < RESIZED_COL) {
+        if((stackIndex == -1) || (histogram[stack[stackIndex]] <= histogram[index])) {
+            stackIndex += 1;
+            stack[stackIndex] = index;
+            index += 1;
+        }
+        else {
+            int top_of_stack = stack[stackIndex];
+            stackIndex -= 1;
+
+            int area = histogram[top_of_stack] * ((stackIndex == -1) ? index : index - stack[stackIndex] - 1);
+            if (maxArea < area) {
+                maxArea = area;
+                height = histogram[top_of_stack];
+                if(stackIndex != -1) {
+                    maxCol = stack[stackIndex] + 1;
+                    width = (index - stack[stackIndex] - 1);
+                }
+                else {
+                    maxCol = 0;
+                    width = index;
+                }
+            }
+        }
+    }
+
+    while (stackIndex != -1) {
+        int top_of_stack = stack[stackIndex];
+        stackIndex -= 1;
+
+        int area = histogram[top_of_stack] * ((stackIndex == -1) ? index : index - stack[stackIndex] - 1);
+        if (maxArea < area) {
+            maxArea = area;
+            height = histogram[top_of_stack];
+            if(stackIndex != -1) {
+                maxCol = stack[stackIndex] + 1;
+                width = (index - stack[stackIndex] - 1);
+            }
+            else {
+                maxCol = 0;
+                width = index;
+            }
+        }
+    }
+
+    answer[0] = maxArea;
+    answer[1] = maxCol;
+    answer[2] = width;
+    answer[3] = height;
+
+    return answer;
+}
+
+
+// Function finds the center of the biggest rectangle that exists and prints to UART
+void getCenter(unsigned char* image) {
+	
+	// Implementing maxRectangle(src) and then printing result;
+	int result[4];
+	maxAreaHistogram(image, &result);
+	int maxArea = result[0];
+	int maxCol = result[1];
+	int maxWidth = result[2];
+	int maxHeight = result[3];
+	int maxRow = 0;
+
+    for(int row = 1; row < RESIZED_ROW; row++) {
+        for(int col = 0; col < RESIZED_COL; col++) {
+			int ind = row * RESIZED_COL + col;
+			int oldInd = (row-1) * RESIZED_COL + col;
+            if (image[ind]) {
+                image[ind] += image[oldInd];
+                maxAreaHistogram(image + row * RESIZED_COL, &result);
+                if(result[0] > maxArea) {
+                    maxArea = result[0];
+                    maxRow = row;
+                    maxCol = result[1];
+                    maxWidth = result[2];
+                    maxHeight = result[3];
+                }
+            }
+        }
+    }
+
+	// Printing out the final location of the result
+	xil_printf("%d, %d", maxRow - (maxHeight/2), maxCol + (maxWidth/2));
+}

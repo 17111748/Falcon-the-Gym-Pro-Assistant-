@@ -1,7 +1,7 @@
 
 import numpy as np
 
-perpendicular = 90 
+expectedHipAngle = 110 
 parallel = 180 
 
 
@@ -27,9 +27,9 @@ class LegRaiseResult:
     def processResult(self): 
         self.feedback = [] 
         if (self.check1): 
-            self.feedback.append("Raise You Legs Higher")
+            self.feedback.append("Raise Your Legs Higher")
         if (self.check2):
-            self.feedback.append("Legs are too High")
+            self.feedback.append("Over-Extending")
         if (self.check3):
             self.feedback.append("Knees are Bent")
 
@@ -41,18 +41,23 @@ class LegRaiseResult:
 
 class LegRaisePostureAnalysis:
 
-    def __init__(self, groundList):
+    def __init__(self):
         self.legRaise = LegRaiseResult()
-        self.groundList = groundList 
 
     # Helper Functions 
-    def getSlope(self, pos1, pos2): 
-        return -(pos2[1] - pos1[1])/(pos2[0] - pos1[0])
+    def getSlope(self, pos0, pos1): 
+        height = 120 
+        y1 = height - pos1[0]
+        x1 = pos1[1]
+        y0 = height - pos0[0]
+        x0 = pos0[1]
+        return (y1-y0)/(x1-x0)
 
     def getAngle(self, Point1, MidPoint, Point2):
         a = np.array(Point1)
         b = np.array(MidPoint)
         c = np.array(Point2)
+
 
         ba = a - b
         bc = c - b
@@ -78,29 +83,15 @@ class LegRaisePostureAnalysis:
         knee = bodyParts[4]
         ankle = bodyParts[6]
 
-        line1Slope = self.getSlope(shoulder, hip)
-        line2Slope = self.getSlope(hip, knee)
-        line3Slope = self.getSlope(knee, ankle)
+        # line1Slope = self.getSlope(shoulder, hip)
+        # line2Slope = self.getSlope(hip, knee)
+        # line3Slope = self.getSlope(knee, ankle)
 
-        print("Slope: ")
-        print(line1Slope)
-        print(line2Slope)
-        print(line3Slope)
-
-
-
-        # groundSlope = self.getSlope(self.groundList[0], self.groundList[1])
-        
         angleHip = self.getAngle(shoulder, hip, knee)
         angleKnee = self.getAngle(hip, knee, ankle)
 
-        print("Angle: ")
-
-        print(angleHip)
-        print(angleKnee)
-
-        if not (self.sameAngle(angleHip, perpendicular, 10)):
-            if(angleHip > perpendicular):
+        if not (self.sameAngle(angleHip, expectedHipAngle, 5)):
+            if(angleHip > expectedHipAngle):
                 self.legRaise.check1 = True 
             else: 
                 self.legRaise.check2 = True 
@@ -112,23 +103,39 @@ class LegRaisePostureAnalysis:
 
     def getResult(self): 
         return self.legRaise.getResult() 
-        
-    
+
+
+
+# NOTE:
+# Raise your Legs Higher. Since we are tracking the hip and not the butt. Therefore, a pefect would be slanted. 110 degrees with +/- 5 degrees
 
 
 #############################################################
 
-groundList = [(0,0), (0,0)]
-bodyParts = [(44.0, 116.0), (133, 98), (0.0, 0.0), (67.0, 114.0), (83.5, 71.5), (81.0, 52.5), (90.0, 51.0), (81.0, 72.0)]
-upBodyParts = [(44.5, 117.0), (133, 98), (0.0, 0.0), (69.5, 111.0), (119.5, 116.5), (91.0, 51.5), (144.5, 116.0), (120.5, 115.5)]
 
-legRaise = LegRaisePostureAnalysis(groundList)
+perfect = [(91.5, 33.5), (96.0, 49.0), (96.0, 65.5), (88.0, 55.5), (41.5, 66.5), (46.0, 72.0), (22.0, 70.0), (27.0, 75.0)]
+over = [(93.0, 32.0), (96.5, 47.5), (97.0, 66.0), (83.5, 49.0), (40.5, 36.5), (42.5, 42.5), (21.5, 35.0), (24.5, 37.5)]
+under = [(92.5, 32.5), (96.5, 48.5), (97.0, 66.0), (89.5, 56.0), (49.5, 81.5), (90.0, 59.0), (33.5, 90.5), (0.0, 0.0)]
+kneeBent = [(92.0, 33.0), (96.5, 48.5), (97.0, 65.0), (89.5, 56.5), (45.5, 63.5), (51.0, 70.0), (31.0, 77.0), (35.5, 80.5)]
 
-legRaise.feedbackCalculation(bodyParts)
+legRaise = LegRaisePostureAnalysis()
+
+
+legRaise.feedbackCalculation(perfect)
 result = legRaise.getResult()
-print(result)
+print("Perfect: " + str(result))
+print("\n")
 
-print("\n\n")
-legRaise.feedbackCalculation(upBodyParts)
+legRaise.feedbackCalculation(over)
 result = legRaise.getResult()
-print(result)
+print("Over: " + str(result))
+print("\n")
+
+legRaise.feedbackCalculation(under)
+result = legRaise.getResult()
+print("Under: " + str(result))
+print("\n")
+
+legRaise.feedbackCalculation(kneeBent)
+result = legRaise.getResult()
+print("Knee Bent: " + str(result))

@@ -1,5 +1,5 @@
 from PIL import Image 
-import cv2 
+# import cv2 
 import numpy as np
 import copy
 import time 
@@ -12,15 +12,14 @@ def writeFile(matrix, path):
     for row in matrix: 
         ans = ""
         for col in row: 
+            if(col == 1):
+                print("bob")
             ans += str(col) + ", "
         ans += "\n"
         string += ans
 
     with open(path, "wt") as f:
         f.write(string)
-
-
-
 
 def outputImage(temp_image, imageMask, path):
     temp_pixel = temp_image.load()
@@ -37,10 +36,10 @@ def printMat(matrix):
         print(row)
     print("\n\n")
 
-originalPath = 'images/lungeForward.png'
-downscalePath = 'images/lungeForward_160x120.png'
-trackDownscale = 'images/track_pushupDown_160x120.png'
-
+originalPath = 'images/Nov/pushUp/HandForward.png'
+downscalePath = 'images/Nov/pushUp/HandForward_160x120.png'
+trackDownscale = 'images/Nov/pushUp/track_Forward.png'
+endpath = 'images/Nov/pushUp/findPixels.png'
 
 
 time0 = time.time()
@@ -56,7 +55,6 @@ new_image.save(downscalePath)
 temp_image = Image.open(downscalePath)
 converted_image = temp_image.convert('HSV')
 converted_pixel = converted_image.load()
-time1 = time.time()
 
 
 
@@ -64,34 +62,33 @@ time1 = time.time()
 track_image = Image.open(downscalePath)
 track_image_pixels = track_image.load()
 
-row = 102
-col = 102
+row = 88
+col = 60
 size = 1
 done = False
 for temp_r in range(resized_row):
     for temp_c in range(resized_col):
-        c = temp_r
-        r = temp_c
+        r = temp_r
+        c = temp_c
         if abs(r - row) < (size) and abs(c - col) < (size): 
             
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r, c]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+1, c]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r, c+1]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r-1, c-1]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+1, c+1]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+2, c+2]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+3, c+3]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r+4, c+4]))
-            print(str(r) + "x" + str(c+1) + ": " + str(converted_pixel[r, c+1]))
+            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c, r]))
+            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+1, r]))
+            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c, r+1]))
+            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c-1, r-1]))
+            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+1, r+1]))
+            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+2, r+2]))
+            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+3, r+3]))
+            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+4, r+4]))
             done = True
-            track_image_pixels[r, c] = (255, 10, 10)#(255, 10, 10)
-            track_image_pixels[r+1, c] = (255, 10, 10)
-            track_image_pixels[r, c+1] = (255, 10, 10)
-            track_image_pixels[r-1, c-1] = (255, 10, 10)
-            track_image_pixels[r+1, c+1] = (255, 10, 10)
-            track_image_pixels[r+2, c+2] = (255, 10, 10)
-            track_image_pixels[r+3, c+3] = (255, 10, 10)
-            track_image_pixels[r+4, c+4] = (255, 10, 10)
+            track_image_pixels[c, r] = (255, 10, 10)#(255, 10, 10)
+            track_image_pixels[c+1, r] = (255, 10, 10)
+            track_image_pixels[c, r+1] = (255, 10, 10)
+            track_image_pixels[c-1, r-1] = (255, 10, 10)
+            track_image_pixels[c+1, r+1] = (255, 10, 10)
+            track_image_pixels[c+2, r+2] = (255, 10, 10)
+            track_image_pixels[c+3, r+3] = (255, 10, 10)
+            track_image_pixels[c+4, r+4] = (255, 10, 10)
     if(done):
         print("break")
         done = False
@@ -102,15 +99,6 @@ image = converted_image
 pixels = converted_pixel
 
 
-
-# Create the Upper and Lower Bound for the mask 
-# list of the color masks: red, yellow, blue, etc... 
-maskList = []
-
-
-# Bitwise and with the mask (Convolution) 
-# positions = [(142,98), (131,99), (133,114), (116,105), (65,105), (39,107)]
-
 # 142x98 (pushupDown)
 # Lower: (17, 87, 160)
 # Upper: (29, 133, 246)
@@ -119,16 +107,16 @@ shoulderOrangeU = (29, 133, 246)
 
 
 # 131x99 (pushupDown)
-# Lower: (21, 13, 170)
-# Upper: (36, 24, 201)
-elbowPeachL = (21, 13, 170)
-elbowPeachU = (36, 24, 201)
+# Lower: (155, 124, 150)
+# Upper: (160, 140, 225)
+elbowBlueL = (155, 124, 150)
+elbowBlueU = (160, 140, 225)
 
 # 133x114 (pushupDown)
 # Lower: (171, 55, 140)
 # Upper: (187, 94, 157)
-wristPurpleL = (171, 55, 140)
-wristPurpleU = (187, 94, 157)
+wristPurpleL = (171, 55, 87)
+wristPurpleU = (192, 94, 157)
 
 # 116x105 (pushupDown)
 # Lower: (42, 70, 209)
@@ -139,33 +127,33 @@ hipYellowU = (45, 100, 253)
 # 65x105 size 6x3
 # Lower: (239, 73, 133)
 # Upper: (253, 134, 202)
-kneeRedL = (239, 73, 133)
-kneeRedU = (252, 134, 202)
+kneeRedL = (239, 64, 133)
+kneeRedU = (252, 137, 216)
+
+# Lower: (50, 45, 160)
+# Upper: (60, 65, 240)
+kneeOtherGreenL = (47, 45, 111)
+kneeOtherGreenU = (60, 74, 240)
 
 # 39x107 (pushupDown)
 # Lower: (130, 52, 200)
 # Upper: (141, 78, 243)
-ankleBlueL = (130, 52, 200)
+ankleBlueL = (125, 52, 127)
 ankleBlueU = (141, 78, 243)
-
-# Lower: (50, 45, 160)
-# Upper: (60, 65, 240)
-kneeOtherGreenL = (50, 45, 160)
-kneeOtherGreenU = (60, 65, 240)
 
 # Lower: (210, 30, 170)
 # Upper: (242, 82, 250)
 ankleOtherPinkL = (210, 30, 170)
 ankleOtherPinkU = (242, 82, 250)
 
-bodyHSVBounds = [(shoulderOrangeL, shoulderOrangeU), (elbowPeachL, elbowPeachU), 
+bodyHSVBounds = [(shoulderOrangeL, shoulderOrangeU), (elbowBlueL, elbowBlueU), 
                  (wristPurpleL, wristPurpleU), (hipYellowL, hipYellowU), 
                  (kneeRedL, kneeRedU), (kneeOtherGreenL, kneeOtherGreenU), 
                  (ankleBlueL, ankleBlueU), (ankleOtherPinkL, ankleOtherPinkU)]
 
-            
-# lowerMask = kneeRedL
-# upperMask = kneeRedU
+
+
+
 
 def jointTracking(lowerMask, upperMask): 
     imageMask = []
@@ -179,41 +167,25 @@ def jointTracking(lowerMask, upperMask):
         imageMask.append(imageRowMask)
     return imageMask
 
-# lowerMask = shoulderOrangeL
-# upperMask = shoulderOrangeU
-# imageMask = jointTracking(lowerMask, upperMask)
-# outputImage(temp_image, imageMask, "images/test.png")
 
 def erosion(imageMask):
-    # imageMask = [[1, 0, 1, 0, 0], [0, 1, 1, 1, 0], [1, 1, 1, 1, 1], [0, 1, 1, 1, 0], [0, 0, 1, 0, 0]]
-
-    # printMat(imageMask)
-    # resized_col = 5
-    # resized_row = 5
-
-
     # Morphological Transform (Dilation, Erosion) to get rid of noise 
     directions = [[-1, 0], [0, -1], [1, 0], [0, 1]]
-    # directions2 = [[-1, 0], [0, -1], [1, 0], [0, 1], [1,1], [-1, 1], [1, -1], [-1,-1], [0, 2], [0, -2], [-2, 0], [2, 0]]
     erosionMask = []
     for row in range(resized_row):
-        erosionMaskRow = []
+        erosionMaskRow = [0] * resized_col
         for col in range(resized_col):
-            colorIn = True 
+            erosionMaskRow[col] = 1
             if (imageMask[row][col] == 0): 
-                colorIn = False 
+                erosionMaskRow[col] = 0
             else:
                 for direction in directions: 
                     x = row + direction[0]
                     y = col + direction[1]
                     if (x < 0 or x >= resized_row or y < 0 or y >= resized_col):
-                        colorIn = False 
+                        erosionMaskRow[col] = 0
                     elif (imageMask[x][y] == 0):
-                        colorIn = False 
-            if (colorIn):
-                erosionMaskRow.append(1)
-            else: 
-                erosionMaskRow.append(0)
+                        erosionMaskRow[col] = 0 
         erosionMask.append(erosionMaskRow)
     return erosionMask          
 
@@ -232,11 +204,9 @@ def dilation(erosionMask):
                         break 
     return imageMask
 
-# outputImage(temp_image, imageMask, "images/testFiltered.jpg")
-
-# Figure out the center of the pixel 
 def max_area_histogram(histogram):
-    stack = list() 
+    stack = [0] * 160
+    stackIndex = -1
     max_area = 0
     maxCol = 0 
     width = 0 
@@ -244,98 +214,45 @@ def max_area_histogram(histogram):
 
     index = 0
     while (index < len(histogram)): 
-        if (not stack) or (histogram[stack[-1]] <= histogram[index]): 
-            stack.append(index) 
+        if (stackIndex == -1) or (histogram[stack[stackIndex]] <= histogram[index]): 
+            stackIndex += 1
+            stack[stackIndex] = index 
             index += 1
 
         else: 
-            top_of_stack = stack.pop() 
+            top_of_stack = stack[stackIndex]
+            stackIndex -= 1 
 
             area = (histogram[top_of_stack] * 
-                ((index - stack[-1] - 1) 
-                if stack else index)) 
+                ( index
+                if (stackIndex == -1) else (index - stack[stackIndex] - 1))) 
 
             if (max_area < area):
                 max_area = area 
                 height = histogram[top_of_stack]
-                if (stack):
-                    maxCol = stack[-1] + 1
-                    width = (index - stack[-1] - 1) 
+                if (stackIndex != -1):
+                    maxCol = stack[stackIndex] + 1
+                    width = (index - stack[stackIndex] - 1) 
                 else: 
                     maxCol = 0
                     width = index 
 
-
-    while stack: 
-        top_of_stack = stack.pop() 
-        area = (histogram[top_of_stack] * ((index - stack[-1] - 1) if stack else index)) 
+    while stackIndex != -1: 
+        top_of_stack = stack[stackIndex]
+        stackIndex -= 1 
+        area = (histogram[top_of_stack] * ((index - stack[stackIndex] - 1) if (stack != -1) else index)) 
 
         if (max_area < area):
             max_area = area 
             height = histogram[top_of_stack]
-            if (stack):
-                maxCol = stack[-1] + 1
-                width = (index - stack[-1] - 1) 
+            if (stackIndex != -1):
+                maxCol = stack[stackIndex] + 1
+                width = (index - stack[stackIndex] - 1) 
             else: 
                 maxCol = 0
                 width = index 
 
     return (max_area, maxCol, width, height)  
-
-# def max_area_histogram(histogram):
-#     stack = [0] * 120
-#     stackIndex = -1
-#     max_area = 0
-#     maxCol = 0 
-#     width = 0 
-#     height = 0
-
-#     index = 0
-#     while (index < len(histogram)): 
-#         # print(stack)
-#         if (stackIndex == -1) or (histogram[stack[stackIndex]] <= histogram[index]): 
-#             stackIndex += 1
-            
-#             stack[stackIndex] = index 
-#             index += 1
-
-#         else: 
-#             top_of_stack = stack[stackIndex]
-#             stackIndex -= 1 
-
-#             area = (histogram[top_of_stack] * 
-#                 ((index - stack[stackIndex] - 1) 
-#                 if (stackIndex != -1) else index)) 
-
-#             if (max_area < area):
-#                 max_area = area 
-#                 height = histogram[top_of_stack]
-#                 if (stackIndex != -1):
-#                     # print("Hi: " + str(area) + " " + str(stack[-1]))
-#                     maxCol = stack[stackIndex] + 1
-#                     width = (index - stack[stackIndex] - 1) 
-#                 else: 
-#                     # print("bob")
-#                     maxCol = 0
-#                     width = index 
-
-
-#     while stackIndex != -1: 
-#         top_of_stack = stack[stackIndex]
-#         stackIndex -= 1 
-#         area = (histogram[top_of_stack] * ((index - stack[stackIndex] - 1) if (stack != -1) else index)) 
-
-#         if (max_area < area):
-#             max_area = area 
-#             height = histogram[top_of_stack]
-#             if (stackIndex != -1):
-#                 maxCol = stack[stackIndex] + 1
-#                 width = (index - stack[stackIndex] - 1) 
-#             else: 
-#                 maxCol = 0
-#                 width = index 
-
-#     return (max_area, maxCol, width, height)  
 
 # Returns area of the largest rectangle  
 # with all 1s in A  
@@ -373,36 +290,38 @@ def getCenter(imageMask, resized_row, resized_col):
     return (row, col)
 
 
-# For Venkata
+def testing(imageMask):
+    for i in range(len(imageMask)):
+        for j in range(len(imageMask[0])):
+            if(imageMask[i][j] == 1):
+                print(str(i) + ", " + str(j))
+
 def mainFunction(bodyHSVBounds): 
     resized_row = 120
     resized_col = 160 
     positions = []
     count = 0
-    # for bodyPart in bodyHSVBounds: 
-    lowerMask = bodyHSVBounds[0][0]
-    upperMask = bodyHSVBounds[0][1]
 
 
-    imageMask = jointTracking(lowerMask, upperMask)
-    writeFile(imageMask, "joint.txt")
+    for bodyPart in bodyHSVBounds: 
+        lowerMask = bodyPart[0]
+        upperMask = bodyPart[1]
+        imageMask = jointTracking(lowerMask, upperMask)
+        imageMask = dilation(imageMask)
+        imageMask = dilation(imageMask)
+        imageMask = erosion(imageMask)
 
+        # # writeFile(imageMask, "erosion.txt")
+        # imageMask = dilation(imageMask)
+        # testing(imageMask)
+        # print("Test")
 
-    # imageMask = erosion(imageMask)
-    # writeFile(imageMask, "erosion.txt")
-
-
-    imageMask = dilation(imageMask)
-    writeFile(imageMask, "dilation.txt")
-    
-    # imageMask = erosion(imageMask)
-    (row, col) = getCenter(imageMask, resized_row, resized_col)
-    positions.append((row, col))
-    count += 1
+        (row, col) = getCenter(imageMask, resized_row, resized_col)
+        positions.append((row, col))
+        count += 1
     
     return positions
 
-mainFunction(bodyHSVBounds)
 
 
 # def mainFunction(bodyHSVBounds): 
@@ -414,10 +333,10 @@ mainFunction(bodyHSVBounds)
 #         lowerMask = bodyPart[0]
 #         upperMask = bodyPart[1]
 #         imageMask = jointTracking(lowerMask, upperMask)
+        
 #         imageMask = dilation(imageMask)
 #         imageMask = dilation(imageMask)
 #         imageMask = erosion(imageMask)
-#         # imageMask = erosion(imageMask)
 
 #         (row, col) = getCenter(imageMask, resized_row, resized_col)
 #         positions.append((row, col))
@@ -426,46 +345,35 @@ mainFunction(bodyHSVBounds)
 #     return positions
 
 
-# positions = mainFunction(bodyHSVBounds)
+positions = mainFunction(bodyHSVBounds)
 
 
-# # 133x98 Up Position
-# # 132x99 Down Position 
 
-# print(positions)
 
-# #positions.pop(7)
-# #positions.pop(5)
-# # positions.pop(2)
-# # positions.pop(1)
-# # positions.pop(0)
-# track_image = Image.open(downscalePath)
-# track_image_pixels = track_image.load()
+print(positions)
 
-# imageMask = []
-# for r in range(resized_row):
-#     temp = [0] * resized_col
-#     imageMask.append(temp)
+track_image = Image.open(downscalePath)
+track_image_pixels = track_image.load()
 
-# for posIndex in range(len(positions)):
-#     pos = positions[posIndex]
-#     row = int(pos[0])
-#     col = int(pos[1])
-#     size = 2
-#     done = False
+imageMask = []
+for r in range(resized_row):
+    temp = [0] * resized_col
+    imageMask.append(temp)
 
-#     for r in range(resized_row):
-#         for c in range(resized_col):
-#             if abs(r - row) < (size) and abs(c - col) < (size): 
-#                 # print(str(r) + "x" + str(c) + ": " + str(converted_pixel[r, c]))
-#                 #print(str(r) + "x" + str(c+1) + ": " + str(converted_pixel[r, c+1]))
-#                 done = True
-#                 track_image_pixels[c, r] = (100, 100, 255) #(255, 10, 10)
-#         if(done):
-#             # print("break")
-#             done = False
+for posIndex in range(len(positions)):
+    pos = positions[posIndex]
+    row = int(pos[0])
+    col = int(pos[1])
+    size = 2
+    done = False
+
+    for r in range(resized_row):
+        for c in range(resized_col):
+            if abs(r - row) < (size) and abs(c - col) < (size): 
+                done = True
+                track_image_pixels[c, r] = (100, 100, 255) #(255, 10, 10)
+        if(done):
+            done = False
     
+track_image.save(endpath)
 
-# # outputImage(temp_image, imageMask, "images/testFinal.jpg")
-# print(positions)
-# track_image.save('images/findPixels.png')
