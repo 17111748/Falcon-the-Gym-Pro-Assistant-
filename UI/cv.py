@@ -1,5 +1,4 @@
-import sys, pygame
-import cv2, time, threading, queue, serial
+import sys, pygame, cv2, time, threading, queue, serial
 from PIL import Image
 from structs import *
 from colors import *
