@@ -136,7 +136,7 @@ class LungePostureAnalysis:
             if (defaultKnee[1] > defaultAnkle[1]):
                 self.lunge.check1 = True
 
-        if not (self.lessThan(otherAnkle[0], otherKnee[0], -1) and self.greaterThan(line1Slope, frontLegSlope, 0.1)):
+        if not (self.lessThan(otherAnkle[0], otherKnee[0], 1) and self.greaterThan(line1Slope, frontLegSlope, 0.1)):
             self.lunge.check2 = True
 
         if not (self.greaterThan(line3Slope, backLegSlope)):
@@ -166,36 +166,36 @@ backwardBackward = [(0.0, 0.0), (0.0, 0.0), (25.5, 95.5), (58.0, 93.5), (95.0, 6
 
 
 
-lunge = LungePostureAnalysis()
+# lunge = LungePostureAnalysis()
 
-lunge.feedbackCalculation(forwardForward)
-result = lunge.getResult()
-print("forwardForward: " + str(result))
-print("\n")
+# lunge.feedbackCalculation(forwardForward)
+# result = lunge.getResult()
+# print("forwardForward: " + str(result))
+# print("\n")
 
-lunge.feedbackCalculation(perfectForward)
-result = lunge.getResult()
-print("perfectForward: " + str(result))
-print("\n")
+# lunge.feedbackCalculation(perfectForward)
+# result = lunge.getResult()
+# print("perfectForward: " + str(result))
+# print("\n")
 
-lunge.feedbackCalculation(backwardForward)
-result = lunge.getResult()
-print("backwardForward: " + str(result))
-print("\n")
+# lunge.feedbackCalculation(backwardForward)
+# result = lunge.getResult()
+# print("backwardForward: " + str(result))
+# print("\n")
 
 
 
-lunge.feedbackCalculation(forwardBackward, False)
-result = lunge.getResult()
-print("forwardBackward: " + str(result))
-print("\n")
+# lunge.feedbackCalculation(forwardBackward, False)
+# result = lunge.getResult()
+# print("forwardBackward: " + str(result))
+# print("\n")
 
-lunge.feedbackCalculation(perfectBackward, False)
-result = lunge.getResult()
-print("perfectBackward: " + str(result))
-print("\n")
+# lunge.feedbackCalculation(perfectBackward, False)
+# result = lunge.getResult()
+# print("perfectBackward: " + str(result))
+# print("\n")
 
-lunge.feedbackCalculation(backwardBackward, False)
-result = lunge.getResult()
-print("backwardBackward: " + str(result))
-print("\n")
+# lunge.feedbackCalculation(backwardBackward, False)
+# result = lunge.getResult()
+# print("backwardBackward: " + str(result))
+# print("\n")

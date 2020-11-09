@@ -6,7 +6,19 @@ from UI.colors import *
 import Signal_Processing.legRaiseAnalysis as legRaiseAnalysis
 import Signal_Processing.lungeAnalysis as lungeAnalysis
 import Signal_Processing.pushupAnalysis as pushupAnalysis
-import Signal_Processing.testPosture as testPosture
+
+def convertString(bodyParts):
+    result = [] 
+    bodyList = bodyParts.split("_")
+
+    for coordinate in bodyList:
+        vals = coordinate.split(",")
+        # print(vals)
+        row = float(vals[0])
+        col = float(vals[1])
+        result.append((row, col))
+
+    return result 
 
 def sendPicture(d,workout):
     resized_col = 160
@@ -15,14 +27,14 @@ def sendPicture(d,workout):
     #temp random stuff
     sample_image_dir = "Signal_Processing\\images\\Nov\\" 
     workoutPhotos = {
-        "l": ["lungeForward\\Backward","lungeForward\\Forward","lungeForward\\Perfect"],
-        "u": ["pushUp\\ButtHigh","pushUp\\HandForward","pushUp\\High","pushUp\\Low","pushUp\\Perfect"],
-        "c": ["legRaise\\kneeBent","legRaise\\Over","legRaise\\Perfect","legRaise\\Under"]
+        "l": ["lungeForward\\Backward.png","lungeForward\\Forward.png","lungeForward\\Perfect.png"],
+        "u": ["pushUp\\HandForward.png","pushUp\\High.png","pushUp\\Perfect.png","pushUp\\Perfect2.png"],
+        "c": ["legRaise\\kneeBent.png","legRaise\\Over.png","legRaise\\Perfect.png","legRaise\\Under.png"]
     }
 
-    randInt = random.randint(0,len(workoutPhotos[workout]))
-
-    original_image = Image.open(sample_image_dir+workoutPhotos[workout])
+    randInt = random.randint(0,len(workoutPhotos[workout])-1)
+   
+    original_image = Image.open(sample_image_dir+workoutPhotos[workout][randInt])
     original_image_pixels = original_image.load()
 
     new_image = original_image.resize((resized_col, resized_row))
@@ -30,7 +42,7 @@ def sendPicture(d,workout):
     # converted_pixel = converted_image.load()
     byte_arr = converted_image.tobytes()
     d.ser.write(byte_arr)
-    print("sent image: "+workoutPhotos[workout])
+    print("sent image: "+workoutPhotos[workout][randInt])
     
     total = b''
     data_received = b''
@@ -40,14 +52,18 @@ def sendPicture(d,workout):
         # if(len(data_received) != 0):
         #     print(data_received.decode("utf-8"))
     coord_string = total.decode("utf-8")
-    locationArray = testPosture.convertString(coord_string)
+    locationArray = convertString(coord_string[:-2]) # getting rid of the \n 
+    print(locationArray)
     feedback = ""
     if(workout=="l"):
-        feedback = d.lungeAnalyzer.feedbackCalculation(locationArray).getResult()
+        d.lungeAnalyzer.feedbackCalculation(locationArray)
+        feedback =  d.lungeAnalyzer.getResult()
     elif(workout=="c"):
-        feedback = d.legRaiseAnalyzer.feedbackCalculation(locationArray).getResult()
+        d.legRaiseAnalyzer.feedbackCalculation(locationArray)
+        feedback = d.legRaiseAnalyzer.getResult()
     elif(workout=="u"):
-        feedback = d.pushupAnalyzer.feedbackCalculation(locationArray).getResult()
+        d.pushupAnalyzer.feedbackCalculation(locationArray)
+        feedback = d.pushupAnalyzer.getResult()
     d.threadQueue.put(feedback)
 
 def init(d):
@@ -93,7 +109,7 @@ def init(d):
         "u": "Push-Ups"
     }
     d.workoutFocus = "core"
-    d.currSet = 1
+    d.currSet = 2
 
     d.currWorkoutFrame = 0
     d.currentRep = 1
@@ -142,10 +158,10 @@ def init(d):
     #threading test
     d.threadQueue = queue.Queue()
 
-    # d.ser = serial.Serial(port = "COM3",
-    #                 baudrate=921600, # Could change to go upto 921600? <- max rate supported by the UARTLite IP block
-    #                 bytesize=serial.EIGHTBITS,
-    #                 stopbits=serial.STOPBITS_ONE)
+    d.ser = serial.Serial(port = "COM3",
+                    baudrate=921600, # Could change to go upto 921600? <- max rate supported by the UARTLite IP block
+                    bytesize=serial.EIGHTBITS,
+                    stopbits=serial.STOPBITS_ONE)
 
     d.legRaiseAnalyzer = legRaiseAnalysis.LegRaisePostureAnalysis()
     d.lungeAnalyzer = lungeAnalysis.LungePostureAnalysis()
@@ -293,7 +309,7 @@ def drawWorkout(d):
         if(d.currWorkoutFrame == d.captureFrame[currentWorkout] and d.breakTime<0 and d.resumeFromPause<0):
             #TODO
             toDownsize = frame.swapaxes(0,1)
-            print('photo captured')
+            # print('photo captured')
             serialThread = threading.Thread(target=sendPicture,name="FPGA_SERIAL",args=[d,currentWorkout],daemon=True)
             serialThread.start()
 

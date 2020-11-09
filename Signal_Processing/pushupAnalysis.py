@@ -157,36 +157,36 @@ class PushupPostureAnalysis:
         
 #################################################################
 
-perfect = [(69.0, 128.5), (73.0, 123.0), (90.5, 120.0), (76.5, 102.5), (79.0, 43.0), (87.5, 81.0), (83.5, 20.0), (0.0, 0.0)]
-handForward = [(71.5, 129.5), (72.5, 121.5), (92.5, 129.5), (81.0, 99.0), (80.0, 40.0), (0.0, 0.0), (84.5, 17.0), (80.5, 38.5)]
-low = [(77.0, 141.5), (72.5, 131.0), (92.0, 129.5), (85.5, 106.5), (84.0, 55.0), (83.0, 103.5), (85.0, 33.0), (0.0, 0.0)]
-high = [(57.5, 127.0), (68.5, 125.5), (88.5, 126.5), (64.0, 100.5), (75.5, 45.0), (82.0, 46.0), (81.5, 21.5), (85.5, 27.0)]
-buttHigh = [(76.0, 138.0), (74.5, 133.5), (92.5, 132.0), (80.0, 108.0), (79.0, 52.0), (75.5, 106.5), (83.0, 29.5), (0.0, 0.0)]
+# perfect = [(69.0, 128.5), (73.0, 123.0), (90.5, 120.0), (76.5, 102.5), (79.0, 43.0), (87.5, 81.0), (83.5, 20.0), (0.0, 0.0)]
+# handForward = [(71.5, 129.5), (72.5, 121.5), (92.5, 129.5), (81.0, 99.0), (80.0, 40.0), (0.0, 0.0), (84.5, 17.0), (80.5, 38.5)]
+# low = [(77.0, 141.5), (72.5, 131.0), (92.0, 129.5), (85.5, 106.5), (84.0, 55.0), (83.0, 103.5), (85.0, 33.0), (0.0, 0.0)]
+# high = [(57.5, 127.0), (68.5, 125.5), (88.5, 126.5), (64.0, 100.5), (75.5, 45.0), (82.0, 46.0), (81.5, 21.5), (85.5, 27.0)]
+# buttHigh = [(76.0, 138.0), (74.5, 133.5), (92.5, 132.0), (80.0, 108.0), (79.0, 52.0), (75.5, 106.5), (83.0, 29.5), (0.0, 0.0)]
  
 
 
-pushup = PushupPostureAnalysis()
+# pushup = PushupPostureAnalysis()
 
 
-pushup.feedbackCalculation(perfect)
-result = pushup.getResult()
-print("Perfect: " + str(result))
-print("\n")
+# pushup.feedbackCalculation(perfect)
+# result = pushup.getResult()
+# print("Perfect: " + str(result))
+# print("\n")
 
-pushup.feedbackCalculation(handForward)
-result = pushup.getResult()
-print("handForward: " + str(result))
-print("\n")
+# pushup.feedbackCalculation(handForward)
+# result = pushup.getResult()
+# print("handForward: " + str(result))
+# print("\n")
 
-pushup.feedbackCalculation(low)
-result = pushup.getResult()
-print("Low: " + str(result))
-print("\n")
+# pushup.feedbackCalculation(low)
+# result = pushup.getResult()
+# print("Low: " + str(result))
+# print("\n")
 
-pushup.feedbackCalculation(high)
-result = pushup.getResult()
-print("High: " + str(result))
-print("\n")
+# pushup.feedbackCalculation(high)
+# result = pushup.getResult()
+# print("High: " + str(result))
+# print("\n")
 
 # # TODO: Fix this 
 # pushup.feedbackCalculation(buttHigh)

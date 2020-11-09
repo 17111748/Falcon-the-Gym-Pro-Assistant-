@@ -112,29 +112,29 @@ class LegRaisePostureAnalysis:
 #############################################################
 
 
-perfect = [(91.5, 33.5), (96.0, 49.0), (96.0, 65.5), (88.0, 55.5), (41.5, 66.5), (46.0, 72.0), (22.0, 70.0), (27.0, 75.0)]
-over = [(93.0, 32.0), (96.5, 47.5), (97.0, 66.0), (83.5, 49.0), (40.5, 36.5), (42.5, 42.5), (21.5, 35.0), (24.5, 37.5)]
-under = [(92.5, 32.5), (96.5, 48.5), (97.0, 66.0), (89.5, 56.0), (49.5, 81.5), (90.0, 59.0), (33.5, 90.5), (0.0, 0.0)]
-kneeBent = [(92.0, 33.0), (96.5, 48.5), (97.0, 65.0), (89.5, 56.5), (45.5, 63.5), (51.0, 70.0), (31.0, 77.0), (35.5, 80.5)]
+# perfect = [(91.5, 33.5), (96.0, 49.0), (96.0, 65.5), (88.0, 55.5), (41.5, 66.5), (46.0, 72.0), (22.0, 70.0), (27.0, 75.0)]
+# over = [(93.0, 32.0), (96.5, 47.5), (97.0, 66.0), (83.5, 49.0), (40.5, 36.5), (42.5, 42.5), (21.5, 35.0), (24.5, 37.5)]
+# under = [(92.5, 32.5), (96.5, 48.5), (97.0, 66.0), (89.5, 56.0), (49.5, 81.5), (90.0, 59.0), (33.5, 90.5), (0.0, 0.0)]
+# kneeBent = [(92.0, 33.0), (96.5, 48.5), (97.0, 65.0), (89.5, 56.5), (45.5, 63.5), (51.0, 70.0), (31.0, 77.0), (35.5, 80.5)]
 
-legRaise = LegRaisePostureAnalysis()
+# legRaise = LegRaisePostureAnalysis()
 
 
-legRaise.feedbackCalculation(perfect)
-result = legRaise.getResult()
-print("Perfect: " + str(result))
-print("\n")
+# legRaise.feedbackCalculation(perfect)
+# result = legRaise.getResult()
+# print("Perfect: " + str(result))
+# print("\n")
 
-legRaise.feedbackCalculation(over)
-result = legRaise.getResult()
-print("Over: " + str(result))
-print("\n")
+# legRaise.feedbackCalculation(over)
+# result = legRaise.getResult()
+# print("Over: " + str(result))
+# print("\n")
 
-legRaise.feedbackCalculation(under)
-result = legRaise.getResult()
-print("Under: " + str(result))
-print("\n")
+# legRaise.feedbackCalculation(under)
+# result = legRaise.getResult()
+# print("Under: " + str(result))
+# print("\n")
 
-legRaise.feedbackCalculation(kneeBent)
-result = legRaise.getResult()
-print("Knee Bent: " + str(result))
+# legRaise.feedbackCalculation(kneeBent)
+# result = legRaise.getResult()
+# print("Knee Bent: " + str(result))

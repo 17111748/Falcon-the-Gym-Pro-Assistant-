@@ -1,6 +1,6 @@
-from pushupAnalysis import *
-from legRaiseAnalysis import *
-from lungeAnalysis import *
+from Signal_Processing.pushupAnalysis import *
+from Signal_Processing.legRaiseAnalysis import *
+from Signal_Processing.lungeAnalysis import *
 
 
 # Images from 'images/Nov/<workout>' 
@@ -8,12 +8,13 @@ from lungeAnalysis import *
 # Convert String to List of Body Parts 
 def convertString(bodyParts):
     result = [] 
-    bodyParts = bodyParts[1:-1]
-    bodyList = bodyParts.split(", ")
+    bodyList = bodyParts.split("_")
 
-    for index in range(0, len(bodyList), 2):
-        row = float(bodyList[index][1:])
-        col = float(bodyList[index + 1][:-1])
+    for coordinate in bodyList:
+        vals = coordinate.split(",")
+        # print(vals)
+        row = float(vals[0])
+        col = float(vals[1])
         result.append((row, col))
 
     return result 
