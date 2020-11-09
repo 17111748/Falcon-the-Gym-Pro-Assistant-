@@ -123,7 +123,7 @@ class LungePostureAnalysis:
         # print(otherKnee[0])
         # print(line1Slope)
         # print(frontLegSlope)
-        # print(self.lessThan(otherAnkle[0], otherKnee[0], -1))
+        # print(self.lessThan(otherAnkle[0], otherKnee[0], 1))
         # print(self.greaterThan(line1Slope, frontLegSlope, 0.1))
         
         # # Back Legs Too Backward
