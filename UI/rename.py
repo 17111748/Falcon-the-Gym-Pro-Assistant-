@@ -7,10 +7,10 @@ dir = r"C:\Users\Vishal\OneDrive\Documents\School\College\2020-2021\18-500\Falco
 def renameFiles():
     # Recursive Case: a folder. Iterate through its files and folders.
     allFiles = os.listdir(dir)
-    allFiles = [ fi for fi in allFiles if fi.endswith(".gif") ]
+    allFiles = [ fi for fi in allFiles if fi.endswith(".jpg") ]
     allFiles.sort()
 
-    init = 17
+    init = 95
     count = 0 
     # for i in range(len(allFiles)-1,-1,-1):
     for i in range(len(allFiles)):
@@ -20,8 +20,8 @@ def renameFiles():
         count +=2
 
 def duplicateFiles(f):
-    init = 0
-    duplicateCount = 17
+    init = 158
+    duplicateCount = 15
     for i in range(duplicateCount):
         newStr = dir+"/"+"{:03n}".format(i+init)+".gif"
         shutil.copyfile(f,newStr)
@@ -43,6 +43,6 @@ def resizeImages(newDir):
         out.save(newDir+"\\"+f)
 
 
-# duplicateFiles(r"C:\Users\Vishal\OneDrive\Documents\School\College\2020-2021\18-500\Falcon-the-Gym-Pro-Assistant-\UI\images\temp\frame_119_delay-0.04s.jpg")
-renameFiles()
+duplicateFiles(r"C:\Users\Vishal\OneDrive\Documents\School\College\2020-2021\18-500\Falcon-the-Gym-Pro-Assistant-\UI\images\temp\frame_119_delay-0.04s.jpg")
+# renameFiles()
 # resizeImages( r"C:\Users\Vishal\OneDrive\Documents\School\College\2020-2021\18-500\Falcon-the-Gym-Pro-Assistant-\UI\images\resized_temp")
