@@ -64,6 +64,9 @@ def sendPicture(d,workout):
     elif(workout=="u"):
         d.pushupAnalyzer.feedbackCalculation(locationArray)
         feedback = d.pushupAnalyzer.getResult()
+    if(len(feedback)==0):
+        d.workoutPerfectCount[workout]+=1
+    d.workoutPerfectCount[workout+"_total"]+=1
     d.threadQueue.put(feedback)
 
 def init(d):
@@ -72,8 +75,12 @@ def init(d):
     d.WINDOW_WIDTH = 1280
     d.WINDOW_HEIGHT = int(d.WINDOW_WIDTH/1.6)
     d.LIVE_VIDEO_DIMS = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.5))
-    d.IMAGE_DIR = 'UI\\images\\leg_raise\\'
-    d.REPS_PER_SET = 6
+    d.IMAGE_DIR = {
+       "c": 'UI\\images\\leg_raise\\',
+       "l": 'UI\\images\\lunge\\',
+       "u": 'UI\\images\\push_up\\'
+    }
+    d.REPS_PER_SET = 30
     d.SETS_PER_WORKOUT = 3
     d.SET_BREAK_TIME = 5
     d.RESUME_TIME = 3
@@ -88,13 +95,24 @@ def init(d):
     d.live_video = pygame.Surface(d.LIVE_VIDEO_DIMS)
     d.clock = pygame.time.Clock()
 
-    #based on rolling AVG of d.clock.tick() of 40ms
+    d.workoutTotalFrames = {
+        "c": 136, 
+        "l": 74,
+        "u": 100
+    }
+
+    d.captureFrame = {
+        "c": 60, 
+        "l": 50,
+        "u": 55
+    }
+    #based on rolling AVG of d.clock.tick() of 41ms
     d.timePerFrame = 0.041
     d.workoutRepTime = {
         #120 frames
-        "c": d.timePerFrame*120,
-        "u": d.timePerFrame*120,
-        "l": d.timePerFrame*120,
+        "c": d.timePerFrame*d.workoutTotalFrames['c'],
+        "u": d.timePerFrame*d.workoutTotalFrames['u'],
+        "l": d.timePerFrame*d.workoutTotalFrames['l'],
     }
 
     #if focused on core then that is 4 sets rest is 3
@@ -109,25 +127,13 @@ def init(d):
         "u": "Push-Ups"
     }
     d.workoutFocus = "core"
-    d.currSet = 2
+    d.currSet = 3
 
     d.currWorkoutFrame = 0
     d.currentRep = 1
 
     d.timeRemaining = -1
     d.beginTime = pygame.time.get_ticks()
-
-    d.workoutTotalFrames = {
-        "c": 120, 
-        "l": 120,
-        "u": 120
-    }
-
-    d.captureFrame = {
-        "c": 50, 
-        "l": 50,
-        "u": 50
-    }
 
     d.workoutHRR = {
         "rest": 0.1,
@@ -158,14 +164,23 @@ def init(d):
     #threading test
     d.threadQueue = queue.Queue()
 
-    d.ser = serial.Serial(port = "COM3",
-                    baudrate=921600, # Could change to go upto 921600? <- max rate supported by the UARTLite IP block
-                    bytesize=serial.EIGHTBITS,
-                    stopbits=serial.STOPBITS_ONE)
+    # d.ser = serial.Serial(port = "COM3",
+    #                 baudrate=921600, # Could change to go upto 921600? <- max rate supported by the UARTLite IP block
+    #                 bytesize=serial.EIGHTBITS,
+    #                 stopbits=serial.STOPBITS_ONE)
 
     d.legRaiseAnalyzer = legRaiseAnalysis.LegRaisePostureAnalysis()
     d.lungeAnalyzer = lungeAnalysis.LungePostureAnalysis()
     d.pushupAnalyzer = pushupAnalysis.PushupPostureAnalysis()
+
+    d.workoutPerfectCount = {
+        "l": 0,
+        "l_total": 0,
+        "c": 0,
+        "c_total": 0, 
+        "u": 0,
+        "u_total": 0  
+    }
 
 def metToCal(d,workout):
     lbToKg = 0.45359
@@ -310,8 +325,8 @@ def drawWorkout(d):
             #TODO
             toDownsize = frame.swapaxes(0,1)
             # print('photo captured')
-            serialThread = threading.Thread(target=sendPicture,name="FPGA_SERIAL",args=[d,currentWorkout],daemon=True)
-            serialThread.start()
+            # serialThread = threading.Thread(target=sendPicture,name="FPGA_SERIAL",args=[d,currentWorkout],daemon=True)
+            # serialThread.start()
 
             #need to downsize to 160x120
             #send to UART in a seperate thread?
@@ -343,7 +358,7 @@ def drawWorkout(d):
 
                 #update model image
                 modelLocation = (int(d.WINDOW_WIDTH*0.02), int(d.WINDOW_HEIGHT*0.3))
-                d.screen.blit(pygame.image.load(d.IMAGE_DIR+"{:03n}".format(d.currWorkoutFrame)+'.gif'),modelLocation)
+                d.screen.blit(pygame.image.load(d.IMAGE_DIR[currentWorkout]+"{:03n}".format(d.currWorkoutFrame)+'.gif'),modelLocation)
                 d.currWorkoutFrame+=1
 
         #timer based (time left, next set break, resume, calories burned)
@@ -381,6 +396,25 @@ def drawSummary(d):
         textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.1))
         titleText = Text(titleStr,textLoc,60,color.black,topmode=False)
         titleText.draw(d)
+
+        caloriesStr = "Active Calories: "+'{0:.1f}'.format(d.calBurned)
+        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.18))
+        caloriesText = Text(caloriesStr,textLoc,30,color.black,topmode=False)
+        caloriesText.draw(d)
+
+        #temp summary
+        pushUpStr = "Perfect Pushups: "+str(d.workoutPerfectCount["u"])+"/"+str(d.workoutPerfectCount["u_total"])
+        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.23))
+        pushText = Text(pushUpStr,textLoc,30,color.black,topmode=False)
+        pushText.draw(d)
+        coreStr = "Perfect Leg Raises: "+str(d.workoutPerfectCount["c"])+"/"+str(d.workoutPerfectCount["c_total"])
+        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.28))
+        coreText = Text(coreStr,textLoc,30,color.black,topmode=False)
+        coreText.draw(d)
+        lungeStr = "Perfect Lunges: "+str(d.workoutPerfectCount["l"])+"/"+str(d.workoutPerfectCount["l_total"])
+        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.33))
+        lungeText = Text(lungeStr,textLoc,30,color.black,topmode=False)
+        lungeText.draw(d)
 
         d.newScreen = False
 
