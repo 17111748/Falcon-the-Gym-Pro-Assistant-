@@ -1,19 +1,28 @@
-import sys, pygame, cv2, time, threading, queue, serial
+import sys, pygame, cv2, time, threading, queue, serial, random
 from PIL import Image
-from structs import *
-from colors import *
+from UI.structs import *
+from UI.colors import *
 
-def parallel(d):
-    # counter = 0 
-    # while(True):
-    #     d.threadQueue.put(counter)
-    #     counter+=1
-    #     time.sleep(2)
+import Signal_Processing.legRaiseAnalysis as legRaiseAnalysis
+import Signal_Processing.lungeAnalysis as lungeAnalysis
+import Signal_Processing.pushupAnalysis as pushupAnalysis
+import Signal_Processing.testPosture as testPosture
 
+def sendPicture(d,workout):
     resized_col = 160
     resized_row = 120
 
-    original_image = Image.open(d.test_image)
+    #temp random stuff
+    sample_image_dir = "Signal_Processing\\images\\Nov\\" 
+    workoutPhotos = {
+        "l": ["lungeForward\\Backward","lungeForward\\Forward","lungeForward\\Perfect"],
+        "u": ["pushUp\\ButtHigh","pushUp\\HandForward","pushUp\\High","pushUp\\Low","pushUp\\Perfect"],
+        "c": ["legRaise\\kneeBent","legRaise\\Over","legRaise\\Perfect","legRaise\\Under"]
+    }
+
+    randInt = random.randint(0,len(workoutPhotos[workout]))
+
+    original_image = Image.open(sample_image_dir+workoutPhotos[workout])
     original_image_pixels = original_image.load()
 
     new_image = original_image.resize((resized_col, resized_row))
@@ -21,7 +30,7 @@ def parallel(d):
     # converted_pixel = converted_image.load()
     byte_arr = converted_image.tobytes()
     d.ser.write(byte_arr)
-    # print("wrote data")
+    print("sent image: "+workoutPhotos[workout])
     
     total = b''
     data_received = b''
@@ -31,23 +40,25 @@ def parallel(d):
         # if(len(data_received) != 0):
         #     print(data_received.decode("utf-8"))
     coord_string = total.decode("utf-8")
-    a = coord_string.split("_")
-    print(a[:-1])
-    d.threadQueue.put(a[:-1])
-
-
+    locationArray = testPosture.convertString(coord_string)
+    feedback = ""
+    if(workout=="l"):
+        feedback = d.lungeAnalyzer.feedbackCalculation(locationArray).getResult()
+    elif(workout=="c"):
+        feedback = d.legRaiseAnalyzer.feedbackCalculation(locationArray).getResult()
+    elif(workout=="u"):
+        feedback = d.pushupAnalyzer.feedbackCalculation(locationArray).getResult()
+    d.threadQueue.put(feedback)
 
 def init(d):
     #constants
-    d.test_image = 'images\\test4.png'
-
     d.FRAME_FREQUENCY = 100
     d.WINDOW_WIDTH = 1280
     d.WINDOW_HEIGHT = int(d.WINDOW_WIDTH/1.6)
     d.LIVE_VIDEO_DIMS = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.5))
-    d.IMAGE_DIR = 'images\\leg_raise\\'
-    d.REPS_PER_SET = 3
-    d.SETS_PER_WORKOUT = 10
+    d.IMAGE_DIR = 'UI\\images\\leg_raise\\'
+    d.REPS_PER_SET = 6
+    d.SETS_PER_WORKOUT = 3
     d.SET_BREAK_TIME = 5
     d.RESUME_TIME = 3
     #setup pygame/camera
@@ -82,10 +93,10 @@ def init(d):
         "u": "Push-Ups"
     }
     d.workoutFocus = "core"
-    d.currSet = 10
+    d.currSet = 1
 
     d.currWorkoutFrame = 0
-    d.currentRep = 3
+    d.currentRep = 1
 
     d.timeRemaining = -1
     d.beginTime = pygame.time.get_ticks()
@@ -135,6 +146,10 @@ def init(d):
     #                 baudrate=921600, # Could change to go upto 921600? <- max rate supported by the UARTLite IP block
     #                 bytesize=serial.EIGHTBITS,
     #                 stopbits=serial.STOPBITS_ONE)
+
+    d.legRaiseAnalyzer = legRaiseAnalysis.LegRaisePostureAnalysis()
+    d.lungeAnalyzer = lungeAnalysis.LungePostureAnalysis()
+    d.pushupAnalyzer = pushupAnalysis.PushupPostureAnalysis()
 
 def metToCal(d,workout):
     lbToKg = 0.45359
@@ -279,8 +294,8 @@ def drawWorkout(d):
             #TODO
             toDownsize = frame.swapaxes(0,1)
             print('photo captured')
-            # serialThread = threading.Thread(target=parallel,name="FPGA_SERIAL",args=[d],daemon=True)
-            # serialThread.start()
+            serialThread = threading.Thread(target=sendPicture,name="FPGA_SERIAL",args=[d,currentWorkout],daemon=True)
+            serialThread.start()
 
             #need to downsize to 160x120
             #send to UART in a seperate thread?
