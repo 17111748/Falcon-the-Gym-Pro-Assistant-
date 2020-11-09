@@ -1,21 +1,51 @@
-import sys, pygame, cv2, time, threading, queue
+import sys, pygame, cv2, time, threading, queue, serial
+from PIL import Image
 from structs import *
 from colors import *
 
 def parallel(d):
-    counter = 0 
-    while(True):
-        d.threadQueue.put(counter)
-        counter+=1
-        time.sleep(2)
+    # counter = 0 
+    # while(True):
+    #     d.threadQueue.put(counter)
+    #     counter+=1
+    #     time.sleep(2)
+
+    resized_col = 160
+    resized_row = 120
+
+    original_image = Image.open(d.test_image)
+    original_image_pixels = original_image.load()
+
+    new_image = original_image.resize((resized_col, resized_row))
+    converted_image = new_image.convert('HSV')
+    # converted_pixel = converted_image.load()
+    byte_arr = converted_image.tobytes()
+    d.ser.write(byte_arr)
+    # print("wrote data")
+    
+    total = b''
+    data_received = b''
+    while ("\n" not in data_received.decode("utf-8")):
+        data_received = d.ser.read(d.ser.in_waiting)
+        total += data_received
+        # if(len(data_received) != 0):
+        #     print(data_received.decode("utf-8"))
+    coord_string = total.decode("utf-8")
+    a = coord_string.split("_")
+    print(a[:-1])
+    d.threadQueue.put(a[:-1])
+
+
 
 def init(d):
     #constants
+    d.test_image = 'images\\test4.png'
+
     d.FRAME_FREQUENCY = 100
     d.WINDOW_WIDTH = 1280
     d.WINDOW_HEIGHT = int(d.WINDOW_WIDTH/1.6)
     d.LIVE_VIDEO_DIMS = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.5))
-    d.IMAGE_DIR = '/Users/vishalbaskar/OneDrive/Documents/School/College/2020-2021/18-500/Falcon-the-Gym-Pro-Assistant-/UI/images/leg_raise/'
+    d.IMAGE_DIR = 'images\\leg_raise\\'
     d.REPS_PER_SET = 3
     d.SETS_PER_WORKOUT = 10
     d.SET_BREAK_TIME = 5
@@ -52,10 +82,10 @@ def init(d):
         "u": "Push-Ups"
     }
     d.workoutFocus = "core"
-    d.currSet = 1
+    d.currSet = 10
 
     d.currWorkoutFrame = 0
-    d.currentRep = 1
+    d.currentRep = 3
 
     d.timeRemaining = -1
     d.beginTime = pygame.time.get_ticks()
@@ -68,8 +98,8 @@ def init(d):
 
     d.captureFrame = {
         "c": 50, 
-        "l": 10,
-        "u": 10
+        "l": 50,
+        "u": 50
     }
 
     d.workoutHRR = {
@@ -99,9 +129,12 @@ def init(d):
     d.pause = False
 
     #threading test
-    d.serialThread = threading.Thread(target=parallel,name="FPGA_SERIAL",args=[d],daemon=True)
     d.threadQueue = queue.Queue()
-    # d.serialThread.start()
+
+    d.ser = serial.Serial(port = "COM3",
+                    baudrate=921600, # Could change to go upto 921600? <- max rate supported by the UARTLite IP block
+                    bytesize=serial.EIGHTBITS,
+                    stopbits=serial.STOPBITS_ONE)
 
 def metToCal(d,workout):
     lbToKg = 0.45359
@@ -188,11 +221,12 @@ def updateHRText(d,workout):
     hrText = Text(hrStr,textLoc,35,color.black,topmode=True)
     hrText.draw(d)    
 
+
 def drawWorkout(d):
     if(not d.pause):
-        #test threading
-        # if(not data.threadQueue.empty()):
-        #     print(data.threadQueue.get())
+        # test threading
+        if(not data.threadQueue.empty()):
+            print(data.threadQueue.get())
 
         currentWorkout = d.workoutSets[d.workoutFocus][d.currSet-1]
         timeTextResumePause = True
@@ -244,6 +278,10 @@ def drawWorkout(d):
         if(d.currWorkoutFrame == d.captureFrame[currentWorkout] and d.breakTime<0 and d.resumeFromPause<0):
             #TODO
             toDownsize = frame.swapaxes(0,1)
+            print('photo captured')
+            serialThread = threading.Thread(target=parallel,name="FPGA_SERIAL",args=[d],daemon=True)
+            serialThread.start()
+
             #need to downsize to 160x120
             #send to UART in a seperate thread?
 
