@@ -70,6 +70,9 @@ def sendPicture(d,workout):
     d.threadQueue.put(feedback)
 
 def init(d):
+    #toggles
+    d.UART = False
+
     #constants
     d.FRAME_FREQUENCY = 100
     d.WINDOW_WIDTH = 1280
@@ -80,7 +83,7 @@ def init(d):
        "l": 'UI\\images\\lunge\\',
        "u": 'UI\\images\\push_up\\'
     }
-    d.REPS_PER_SET = 30
+    d.REPS_PER_SET = 6
     d.SETS_PER_WORKOUT = 3
     d.SET_BREAK_TIME = 5
     d.RESUME_TIME = 3
@@ -97,13 +100,13 @@ def init(d):
 
     d.workoutTotalFrames = {
         "c": 136, 
-        "l": 74,
+        "l": 173,
         "u": 100
     }
 
     d.captureFrame = {
         "c": 60, 
-        "l": 50,
+        "l": 88,
         "u": 55
     }
     #based on rolling AVG of d.clock.tick() of 41ms
@@ -127,7 +130,7 @@ def init(d):
         "u": "Push-Ups"
     }
     d.workoutFocus = "core"
-    d.currSet = 3
+    d.currSet = 1
 
     d.currWorkoutFrame = 0
     d.currentRep = 1
@@ -164,10 +167,11 @@ def init(d):
     #threading test
     d.threadQueue = queue.Queue()
 
-    # d.ser = serial.Serial(port = "COM3",
-    #                 baudrate=921600, # Could change to go upto 921600? <- max rate supported by the UARTLite IP block
-    #                 bytesize=serial.EIGHTBITS,
-    #                 stopbits=serial.STOPBITS_ONE)
+    if(d.UART):
+        d.ser = serial.Serial(port = "COM3",
+            baudrate=921600, # Could change to go upto 921600? <- max rate supported by the UARTLite IP block
+            bytesize=serial.EIGHTBITS,
+            stopbits=serial.STOPBITS_ONE)
 
     d.legRaiseAnalyzer = legRaiseAnalysis.LegRaisePostureAnalysis()
     d.lungeAnalyzer = lungeAnalysis.LungePostureAnalysis()
@@ -325,11 +329,9 @@ def drawWorkout(d):
             #TODO
             toDownsize = frame.swapaxes(0,1)
             # print('photo captured')
-            # serialThread = threading.Thread(target=sendPicture,name="FPGA_SERIAL",args=[d,currentWorkout],daemon=True)
-            # serialThread.start()
-
-            #need to downsize to 160x120
-            #send to UART in a seperate thread?
+            if(d.UART):
+                serialThread = threading.Thread(target=sendPicture,name="FPGA_SERIAL",args=[d,currentWorkout],daemon=True)
+                serialThread.start()
 
         #incrementing rep and updating model
         if(d.breakTime < 0 or d.currWorkoutFrame==0):
