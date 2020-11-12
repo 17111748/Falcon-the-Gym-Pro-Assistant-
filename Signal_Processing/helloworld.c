@@ -77,6 +77,10 @@ void erode(unsigned char* src, unsigned char* dest);
 void dilate(unsigned char* src, unsigned char* dest);
 void getCenter(unsigned char* src);
 
+bool testing;
+
+testing = true;
+
 int main()
 {
     init_platform();
@@ -101,6 +105,11 @@ int main()
     while(1) {
 
     	initData(identifierPtr, imagePtr);
+
+		if(testing) {
+			printImage(imagePtr);
+			continue;	
+		}
 
     	int *neededJoints = jointList[*identifierPtr];
 
@@ -173,10 +182,10 @@ void printImage(unsigned char* src) {
 	for(int row = 0; row < RESIZED_ROW; row++) {
 		for(int col = 0; col < RESIZED_COL; col++) {
 			int ind = row * RESIZED_COL + col;
-			if(src[ind] == 1) {
-				xil_printf("%d, %d\n\r", row, col);
-			}
-//			xil_printf("%d ", src[ind]);
+			// if(src[ind] == 1) {
+			// 	xil_printf("%d, %d\n\r", row, col);
+			// }
+			xil_printf("%d ", src[ind]);
 		}
 	}
 }
