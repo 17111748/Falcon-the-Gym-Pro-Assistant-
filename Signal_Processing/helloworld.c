@@ -61,20 +61,17 @@ XUartLite UartLite;		/* Instance of the UartLite Device */
 #define RESIZED_ROW 120
 #define RESIZED_COL 160
 #define NUM_DIRECTIONS 4
-#define NUM_JOINTS 1
+#define NUM_JOINTS 8
+#define NUM_REPS 5
 
+// 								Lunge					Pushup					Leg Raise
+int jointList[3][8] = {{0, 0, 0, 1, 1, 1, 1, 1}, {1, 1, 1, 0, 1, 0, 1, 0}, {1, 0, 0, 1, 1, 0, 1, 0}};
 int lowerMask[8][3] = {{17, 87, 160},  {155, 124, 150}, {171, 55, 87},  {38, 65, 165},  {239, 64, 133},  {47, 45, 111}, {125, 52, 127}, {210, 30, 170}};
 int upperMask[8][3] = {{29, 133, 246}, {160, 140, 225}, {192, 94, 157}, {45, 100, 253}, {252, 137, 216}, {60, 74, 240}, {141, 78, 243}, {242, 82, 250}};
 int directions[4][2] = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
 
-struct Stack {
-    int top;
-    unsigned capacity;
-    int* array;
-};
-
 // Function Prototypes
-void storeImage(unsigned char* dest);
+void initData(unsigned char* dest1, unsigned char* dest2);
 void binaryMask(unsigned char* src, unsigned char* dest);
 void erode(unsigned char* src, unsigned char* dest);
 void dilate(unsigned char* src, unsigned char* dest);
@@ -95,48 +92,79 @@ int main()
 		return XST_FAILURE;
 	}
 
-    xil_printf("hello\n\r");
+//    xil_printf("hello");
 
     // Loading the image into memory
     unsigned char* imagePtr = XPAR_BRAM_0_BASEADDR; // Base addr of the BRAM block
-	storeImage(imagePtr);
+    unsigned char *identifierPtr = 0xC0020D00;
 
-    xil_printf("loaded image\n\r");
+    while(1) {
 
-	// Repeat the following for each of the various body locations
-	for(int joint = 0; joint < NUM_JOINTS; joint++) {
+    	initData(identifierPtr, imagePtr);
 
-		// Generating Binary Mask
-		unsigned char* binMaskPtr = 0xC000E100;
-		createBinaryMask(imagePtr, binMaskPtr, joint);
+    	int *neededJoints = jointList[*identifierPtr];
 
-		// Performing 2 sets of Dilations
-		unsigned char* dilMaskPtr1 = 0xC0012C00;
-		dilate(binMaskPtr, dilMaskPtr1);
+//        xil_printf("loaded image");
 
-		unsigned char* dilMaskPtr2 = 0xC0017700;
-		dilate(dilMaskPtr1, dilMaskPtr2);
+    	// Repeat the following for each of the various body locations
+    	for(int joint = 0; joint < NUM_JOINTS; joint++) {
 
-		// Performing Erosion 
-		unsigned char* erosMaskPtr = 0xC001C200;
-		erode(dilMaskPtr2, erosMaskPtr)
+    		if(neededJoints[joint] == 0) {
+    			xil_printf("%d,%d_", 0, 0);
+    			continue;
+    		}
 
-		// Calculate Result
-		getCenter(erosMaskPtr);
-	}
+    		// Generating Binary Mask
+    		unsigned char* binMaskPtr = 0xC000E100;
+    		createBinaryMask(imagePtr, binMaskPtr, joint);
 
-    xil_printf("done\n\r");
+//    		xil_printf("Binary mask");
+//    		printImage(binMaskPtr);
+
+    		// Performing 2 sets of Dilations
+    		unsigned char* dilMaskPtr1 = 0xC0012C00;
+    		dilate(binMaskPtr, dilMaskPtr1);
+//    		xil_printf("Dilation mask\n\r");
+//    		printImage(dilMaskPtr1);
+
+
+    		unsigned char* dilMaskPtr2 = 0xC0017700;
+    		dilate(dilMaskPtr1, dilMaskPtr2);
+//    		xil_printf("Dilation mask2\n\r");
+//    		printImage(dilMaskPtr2);
+
+    		// Performing Erosion
+    		unsigned char* erosMaskPtr = 0xC001C200;
+    		erode(dilMaskPtr2, erosMaskPtr);
+//    		xil_printf("Erosion mask\n\r");
+//    		printImage(erosMaskPtr);
+
+    		// Calculate Result
+//    		xil_printf("result");
+    		getCenter(erosMaskPtr);
+
+    	}
+        xil_printf("\n");
+
+    }
 
     cleanup_platform();
     return 0;
 }
 
-// Function listens to the UART port and loads IMAGE_SIZE bytes starting at dest
-void storeImage(unsigned char* dest) {
+// Function listens to the UART port and loads the identifier and image of IMAGE_SIZE bytes into mem
+void initData(unsigned char* dest1, unsigned char* dest2) {
     int received_count;
+    // Storing the identifier
+	received_count = 0;
+	while(received_count < 1) {
+		received_count += XUartLite_Recv(&UartLite, dest1, 1); // Storing all of the bytes received from UART into BRAM at the base_addr
+//		xil_printf("%d\n\r", received_count);
+	}
+    // Storing the image
     received_count = 0;
 	while(received_count < IMAGE_SIZE) {
-		received_count += XUartLite_Recv(&UartLite, dest + received_count, IMAGE_SIZE - received_count); // Storing all of the bytes received from UART into BRAM at the base_addr
+		received_count += XUartLite_Recv(&UartLite, dest2 + received_count, IMAGE_SIZE - received_count); // Storing all of the bytes received from UART into BRAM at the base_addr
 //		xil_printf("%d\n\r", received_count);
 	}
 }
@@ -156,7 +184,7 @@ void printImage(unsigned char* src) {
 // Function generates a binary mask with the bytes stored at src and loads into dest
 void createBinaryMask(unsigned char* src, unsigned char* dest, int joint) {
 
-	// Gathering the bounds 
+	// Gathering the bounds
 	int lowerHueBound = lowerMask[joint][0];
 	int lowerSatBound = lowerMask[joint][1];
 	int lowerValBound = lowerMask[joint][2];
@@ -164,10 +192,13 @@ void createBinaryMask(unsigned char* src, unsigned char* dest, int joint) {
 	int higherSatBound = upperMask[joint][1];
 	int higherValBound = upperMask[joint][2];
 
+//	int ind = 75 * RESIZED_COL + 96;
+//	xil_printf("%d, %d, %d", src[3 * ind], src[3 * ind + 1], src[3 * ind + 2]);
+
 	for(int i = 0; i < 160 * 120; i++) {
-		u8 hue = src[3 * i];
-		u8 saturation = src[3 * i + 1];
-		u8 value = src[3 * i + 2];
+		int hue = src[3 * i];
+		int saturation = src[3 * i + 1];
+		int value = src[3 * i + 2];
 		if(hue >= lowerHueBound && saturation >= lowerSatBound && value >= lowerValBound && hue <= higherHueBound && saturation <= higherSatBound && value <= higherValBound) {
 			dest[i] = 1;
 		}
@@ -290,7 +321,7 @@ int* maxAreaHistogram(unsigned char* histogram, int *answer) {
 
 // Function finds the center of the biggest rectangle that exists and prints to UART
 void getCenter(unsigned char* image) {
-	
+
 	// Implementing maxRectangle(src) and then printing result;
 	int result[4];
 	maxAreaHistogram(image, &result);
@@ -319,5 +350,5 @@ void getCenter(unsigned char* image) {
     }
 
 	// Printing out the final location of the result
-	xil_printf("%d, %d", maxRow - (maxHeight/2), maxCol + (maxWidth/2));
+	xil_printf("%d,%d_", maxRow - (maxHeight/2), maxCol + (maxWidth/2));
 }
