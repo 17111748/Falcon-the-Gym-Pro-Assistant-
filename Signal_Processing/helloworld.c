@@ -77,9 +77,11 @@ void erode(unsigned char* src, unsigned char* dest);
 void dilate(unsigned char* src, unsigned char* dest);
 void getCenter(unsigned char* src);
 
-bool testing;
+bool testingAccuracy;
+bool testingLatency;
 
-testing = true;
+testingAccuracy = true;
+testingLatency = false;
 
 int main()
 {
@@ -106,9 +108,16 @@ int main()
 
     	initData(identifierPtr, imagePtr);
 
-		if(testing) {
+		if(testingAccuracy) {
 			printImage(imagePtr);
+			xil_printf("\n");
 			continue;	
+		}
+
+		if(testingLatency) {
+			xil_printf("received all of the info!");
+			xil_printf("\n");
+			continue;
 		}
 
     	int *neededJoints = jointList[*identifierPtr];

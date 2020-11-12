@@ -1,6 +1,7 @@
 from PIL import Image
 import os
 import serial
+import time
 
 def writeFile(path, result):
     with open(path, "wt") as f:
@@ -23,7 +24,9 @@ resized_row = 120
 #     bytesize=serial.EIGHTBITS,
 #     stopbits=serial.STOPBITS_ONE)
 
-# Iterating through all of the images
+## Testing the accuracy of the data transferred
+
+# Generating all of the various output files
 for workout in workoutPhotos:
     for exercise in range(len(workoutPhotos[workout])):
         original_image = Image.open(os.path.join(sample_image_dir, workoutPhotos[workout][exercise]))
@@ -55,3 +58,43 @@ for workout in workoutPhotos:
 
         # # Generating the produced result
         # writeFile(workout + "_" + str(exercise) + "_" + "found_bytes.txt", result[:-2])
+        result = ""
+
+        print("Checking result for ", workout + "_" + str(exercise), "... ", end = "")
+
+        if res != result[:-2]:
+            print("Oops, data didnt match. Check logs")
+        else:
+            print("Data matched!")
+
+
+## Testing the latency of the data transferred
+
+totalTime = 0
+numImages = 0
+for workout in workoutPhotos:
+    for exercise in range(len(workoutPhotos[workout])):
+        original_image = Image.open(os.path.join(sample_image_dir, workoutPhotos[workout][exercise]))
+        original_image_pixels = original_image.load()
+
+        new_image = original_image.resize((resized_col, resized_row))
+        converted_image = new_image.convert('HSV')
+
+        byte_arr = converted_image.tobytes()
+
+        start_time = time.time()
+        ser.write(byte_arr)
+
+        while ("\n" not in data_received.decode("utf-8")):
+            data_received = d.ser.read(d.ser.in_waiting)
+            total += data_received
+            # if(len(data_received) != 0):
+            #     print(data_received.decode("utf-8"))
+        
+        end_time = time.time()
+        
+        print(total.decode("utf-8"))
+        totalTime += (end_time - start_time)
+        numImages += 1
+
+print("Average time to write the image to the FPGA and get some data back is: ", totalTime / numImages)
