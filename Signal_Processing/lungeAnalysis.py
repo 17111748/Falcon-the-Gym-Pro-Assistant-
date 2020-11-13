@@ -17,6 +17,7 @@ class LungeResult:
     # Feedback
     def __init__(self):
         self.feedback = [] 
+        self.invalid = False 
         self.check1 = False
         self.check2 = False
         self.check3 = False 
@@ -30,10 +31,15 @@ class LungeResult:
         if (self.check3):
             self.feedback.append("Back Legs too far Back")
 
+        if (self.invalid): 
+            self.feedback = []
+            self.feedback.append("Invalid Joint Detection")
+
     def getResult(self): 
         self.check1 = False 
         self.check2 = False
         self.check3 = False
+        self.invalid = False 
         return self.feedback
 
 
@@ -49,6 +55,14 @@ class LungePostureAnalysis:
         x1 = pos1[1]
         y0 = height - pos0[0]
         x0 = pos0[1]
+
+        if ((x1 - x0) == 0):
+            if (y1 != y0): 
+                return INT_MAX 
+            else: 
+                self.invalid = True 
+                return 0 
+
         return (y1-y0)/(x1-x0)
 
     def getAngle(self, Point1, MidPoint, Point2):
@@ -92,6 +106,14 @@ class LungePostureAnalysis:
         otherKnee = bodyParts[5]
         defaultAnkle = bodyParts[6]
         otherAnkle = bodyParts[7]
+
+        if ((int(shoulder[0]) == 0 and int(shoulder[1]) == 0) or 
+            (int(hip[0]) == 0 and int(hip[1]) == 0) or 
+            (int(defaultKnee[0]) == 0 and int(defaultKnee[1]) == 0) or 
+            (int(otherKnee[0]) == 0 and int(otherKnee[1]) == 0) or 
+            (int(defaultAnkle[0]) == 0 and int(defaultAnkle[1]) == 0) or 
+            (int(otherAnkle[0]) == 0 and int(otherAnkle[1]) == 0)):
+            self.invalid = True
 
         if (default == False):
             defaultKnee = bodyParts[5]
