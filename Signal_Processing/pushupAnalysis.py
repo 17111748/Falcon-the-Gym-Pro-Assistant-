@@ -22,7 +22,7 @@ class PushupResult:
         self.check2 = False
         self.check3 = False
         self.check4 = False
-        self.invalid = False 
+        self.invalid = [] 
     
 
     def processResult(self): 
@@ -38,14 +38,32 @@ class PushupResult:
 
         if (self.invalid): 
             self.feedback = []
-            self.feedback.append("Invalid Joint Detection")
+            str = "Invalid Joints Detected:"
+            if (0 in self.invalid):
+                str += " Shoulder,"
+            if (1 in self.invalid):
+                str += " Elbow,"
+            if (2 in self.invalid):
+                str += " Wrist,"
+            if (3 in self.invalid):
+                str += " Hip,"
+            if (4 in self.invalid):
+                str += " Knee,"
+            if (5 in self.invalid):
+                str += " Other Knee,"
+            if (6 in self.invalid):
+                str += " Ankle,"
+            if (7 in self.invalid):
+                str += " Other Ankle,"
+            str = str[:-1] + "!"
+            self.feedback.append(str)
 
     def getResult(self): 
         self.check1 = False 
         self.check2 = False
         self.check3 = False
         self.check4 = False 
-        self.invalid = False 
+        self.invalid = []
         return self.feedback
 
 
@@ -66,7 +84,6 @@ class PushupPostureAnalysis:
             if (y1 != y0): 
                 return float("inf") 
             else: 
-                self.invalid = True 
                 return 0 
 
         return (y1-y0)/(x1-x0)
@@ -113,14 +130,25 @@ class PushupPostureAnalysis:
         hip = bodyParts[3]
         knee = bodyParts[4]
         ankle = bodyParts[6]
+        
+        if (int(shoulder[0]) == 0 and int(shoulder[1]) == 0):
+            self.pushup.invalid.append(0)  
 
-        if ((int(shoulder[0]) == 0 and int(shoulder[1]) == 0) or 
-            (int(elbow[0]) == 0 and int(elbow[1]) == 0) or 
-            (int(wrist[0]) == 0 and int(wrist[1]) == 0) or 
-            (int(hip[0]) == 0 and int(hip[1]) == 0) or 
-            (int(knee[0]) == 0 and int(knee[1]) == 0) or 
-            (int(ankle[0]) == 0 and int(ankle[1]) == 0)):
-            self.invalid = True
+        if (int(elbow[0]) == 0 and int(elbow[1]) == 0):
+            self.pushup.invalid.append(1)
+
+        if (int(wrist[0]) == 0 and int(wrist[1]) == 0):
+            self.pushup.invalid.append(2)
+
+        if (int(hip[0]) == 0 and int(hip[1]) == 0):
+            self.pushup.invalid.append(3)
+            
+        if (int(knee[0]) == 0 and int(knee[1]) == 0):
+            self.pushup.invalid.append(4)
+
+        if (int(ankle[0]) == 0 and int(ankle[1]) == 0):
+            self.pushup.invalid.append(6) 
+    
 
         line1Slope = self.getSlope(shoulder, hip)
         line2Slope = self.getSlope(hip, knee)

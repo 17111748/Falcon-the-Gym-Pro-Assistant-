@@ -36,10 +36,16 @@ def printMat(matrix):
         print(row)
     print("\n\n")
 
-originalPath = 'images/Nov/pushUp/HandForward.png'
-downscalePath = 'images/Nov/pushUp/HandForward_160x120.png'
-trackDownscale = 'images/Nov/pushUp/track_Forward.png'
-endpath = 'images/Nov/pushUp/findPixels.png'
+
+# originalPath = 'images/iphone/color.jpg'
+# downscalePath = 'images/iphone/color_160x120.png'
+# trackDownscale = 'images/iphone/track_color_160x120.png'
+# endpath = 'images/iphone/find_Pixels.png'
+
+originalPath = 'images/Nov/lungeForward/Forward.png'
+downscalePath = 'images/Nov/lungeForward/HandForward_160x120.png'
+trackDownscale = 'images/Nov/lungeForward/track_Forward.png'
+endpath = 'images/Nov/lungeForward/findPixels.png'
 
 
 time0 = time.time()
