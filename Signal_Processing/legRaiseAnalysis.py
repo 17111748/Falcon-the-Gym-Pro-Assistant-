@@ -18,6 +18,7 @@ class LegRaiseResult:
     # Feedback
     def __init__(self):
         self.feedback = [] 
+        self.invalid = False 
         self.check1 = False
         self.check2 = False
         self.check3 = False 
@@ -31,11 +32,16 @@ class LegRaiseResult:
             self.feedback.append("Over-Extending")
         if (self.check3):
             self.feedback.append("Knees are Bent")
+        
+        if (self.invalid): 
+            self.feedback = []
+            self.feedback.append("Invalid Joint Detection")
 
     def getResult(self): 
         self.check1 = False
         self.check2 = False
         self.check3 = False 
+        self.invalid = False 
         return self.feedback
 
 class LegRaisePostureAnalysis:
@@ -50,6 +56,14 @@ class LegRaisePostureAnalysis:
         x1 = pos1[1]
         y0 = height - pos0[0]
         x0 = pos0[1]
+
+        if ((x1 - x0) == 0):
+            if (y1 != y0): 
+                return INT_MAX 
+            else: 
+                self.invalid = True 
+                return 0 
+
         return (y1-y0)/(x1-x0)
 
     def getAngle(self, Point1, MidPoint, Point2):
@@ -81,6 +95,12 @@ class LegRaisePostureAnalysis:
         hip = bodyParts[3]
         knee = bodyParts[4]
         ankle = bodyParts[6]
+
+        if ((int(shoulder[0]) == 0 and int(shoulder[1]) == 0) or 
+            (int(hip[0]) == 0 and int(hip[1]) == 0) or 
+            (int(knee[0]) == 0 and int(knee[1]) == 0) or 
+            (int(ankle[0]) == 0 and int(ankle[1]) == 0)):
+            self.invalid = True 
 
         # line1Slope = self.getSlope(shoulder, hip)
         # line2Slope = self.getSlope(hip, knee)
