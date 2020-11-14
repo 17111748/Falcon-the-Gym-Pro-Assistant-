@@ -64,7 +64,7 @@ class PushupPostureAnalysis:
 
         if ((x1 - x0) == 0):
             if (y1 != y0): 
-                return INT_MAX 
+                return float("inf") 
             else: 
                 self.invalid = True 
                 return 0 
