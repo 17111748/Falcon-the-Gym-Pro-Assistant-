@@ -1,4 +1,4 @@
-import sys, pygame, cv2, time, threading, queue, serial, random, UI.database, pprint, datetime
+import sys, pygame, cv2, time, threading, queue, serial, random, UI.database, pprint, datetime, os
 from PIL import Image
 from UI.structs import *
 from UI.colors import *
@@ -26,11 +26,11 @@ def sendPicture(d,workout):
     resized_row = 120
 
     #temp random stuff
-    sample_image_dir = "Signal_Processing\\images\\Nov\\" 
+    sample_image_dir = os.path.join("Signal_Processing", "images", "Nov", "") 
     workoutPhotos = {
-        "l": ["lungeForward\\Backward.png","lungeForward\\Forward.png","lungeForward\\Perfect.png"],
-        "u": ["pushUp\\HandForward.png","pushUp\\High.png","pushUp\\Perfect.png","pushUp\\Perfect2.png"],
-        "c": ["legRaise\\kneeBent.png","legRaise\\Over.png","legRaise\\Perfect.png","legRaise\\Under.png"]
+        "l": [os.path.join("lungeForward", "Backward.png"), os.path.join("lungeForward", "Forward.png"), os.path.join("lungeForward", "Perfect.png")],
+        "u": [os.path.join("pushUp", "HandForward.png"), os.path.join("pushUp", "High.png"), os.path.join("pushUp", "Perfect.png"), os.path.join("pushUp", "Perfect2.png")],
+        "c": [os.path.join("legRaise", "kneeBent.png"), os.path.join("legRaise", "Over.png"), os.path.join("legRaise", "Perfect.png"), os.path.join("legRaise", "Under.png")]
     }
 
     randInt = random.randint(0,len(workoutPhotos[workout])-1)
@@ -87,9 +87,9 @@ def initConstants(d):
     d.WINDOW_HEIGHT = int(d.WINDOW_WIDTH/1.6)
     d.LIVE_VIDEO_DIMS = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.5))
     d.IMAGE_DIR = {
-       "c": 'UI\\images\\leg_raise\\',
-       "l": 'UI\\images\\lunge\\',
-       "u": 'UI\\images\\push_up\\'
+       "c": os.path.join("UI", "images", "leg_raise", ""),
+       "l": os.path.join("UI", "images", "lunge", ""),
+       "u": os.path.join("UI", "images", "push_up", "")
     }
     d.REPS_PER_SET = 3
     d.SETS_PER_WORKOUT = 3
@@ -520,6 +520,8 @@ def main(d):
                     d.newScreen = True
         elif(d.currentScreen == screenMode.SUMMARY):
             drawSummary(d)
+        # elif(d.currentScreen == screenMode.HISTORY):
+        #     drawHistory(d)
         pygame.display.update()
         pygameHandleEvent(d)
         # rollingAvg = (rollingAvg*frames+d.clock.tick(25))/(frames+1)
