@@ -60,7 +60,7 @@ def sendPicture(d,workout):
         print(locationArray)
     else:
         time.sleep(1.4)
-        locationArray = [(12.0,13.0),(12.0,13.0),(12.0,13.0),(12.0,13.0),(12.0,13.0),(12.0,13.0),(12.0,13.0),(12.0,13.0)]
+        locationArray = [(71.5, 129.5), (72.5, 121.5), (92.5, 129.5), (81.0, 99.0), (80.0, 40.0), (0.0, 0.0), (84.5, 17.0), (80.5, 38.5)]    
     feedback = ""
     if(workout=="l"):
         d.lungeAnalyzer.feedbackCalculation(locationArray)
@@ -91,8 +91,8 @@ def initConstants(d):
        "l": 'UI\\images\\lunge\\',
        "u": 'UI\\images\\push_up\\'
     }
-    d.REPS_PER_SET = 5
-    d.SETS_PER_WORKOUT = 2
+    d.REPS_PER_SET = 3
+    d.SETS_PER_WORKOUT = 3
     d.SET_BREAK_TIME = 5
     d.RESUME_TIME = 3
 
@@ -120,6 +120,12 @@ def initFrames(d):
         "l": 88,
         "u": 55
     }
+    
+    d.endFeedbackFrame = {
+        "c": 16,
+        
+    }
+
     #based on rolling AVG of d.clock.tick() of 40ms
     d.timePerFrame = 0.04
     d.workoutRepTime = {
@@ -130,7 +136,7 @@ def initFrames(d):
     }
 
 def initNewWorkout(d):
-    d.currSet = 3
+    d.currSet = 2
     d.calBurned = 0 
     d.currWorkoutFrame = 0
     d.currentRep = 1
