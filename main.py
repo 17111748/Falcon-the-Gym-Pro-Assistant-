@@ -1,4 +1,4 @@
-import sys, pygame, cv2, time, threading, queue, serial, random
+import sys, pygame, cv2, time, threading, queue, serial, random, UI.database, pprint
 from PIL import Image
 from UI.structs import *
 from UI.colors import *
@@ -150,9 +150,15 @@ def init(d):
         "l": 2.23,
         "u": 7.55
     }
+    
+    d.db = UI.database.database("falcon.db")
+
     #imperial (inches, pounds)
-    d.age = 21
-    d.weight = 175
+    d.currProfile = d.db.getLastProfile()
+    profileData = d.db.getProfile(d.currProfile)
+    d.age = profileData[1]
+    d.weight = profileData[2]
+
     d.calBurned = 0 
 
     d.currentScreen = screenMode.WORKOUT
@@ -185,6 +191,9 @@ def init(d):
         "u": 0,
         "u_total": 0  
     }
+
+    pprint.pprint(d)
+    print(d.currProfile)
 
 def metToCal(d,workout):
     lbToKg = 0.45359
@@ -271,7 +280,6 @@ def updateHRText(d,workout):
     hrText = Text(hrStr,textLoc,35,color.black,topmode=True)
     hrText.draw(d)    
 
-
 def drawWorkout(d):
     if(not d.pause):
         # test threading
@@ -329,6 +337,10 @@ def drawWorkout(d):
             #TODO
             toDownsize = frame.swapaxes(0,1)
             # print('photo captured')
+            # Depending on exercise add a d.ser.write before you write the byte_arr.
+            # Write \x00 for lunges, \x01 for push ups, x\02 for leg raise
+            # d.ser.write(b'\x01')
+            # d.ser.write(byte_arr)
             if(d.UART):
                 serialThread = threading.Thread(target=sendPicture,name="FPGA_SERIAL",args=[d,currentWorkout],daemon=True)
                 serialThread.start()
@@ -461,6 +473,7 @@ def main(d):
 def pygameHandleEvent(d):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
+            d.db.cursor.close()
             sys.exit(0)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:

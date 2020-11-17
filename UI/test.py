@@ -1,3 +1,3 @@
-import pygame
+import sqlite3
 
-print(pygame.font.get_fonts())
+testDB = sqlite3.connect("test1.db")
