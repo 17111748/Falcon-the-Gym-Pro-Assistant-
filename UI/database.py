@@ -12,8 +12,8 @@ class database(object):
         createProfile = """CREATE TABLE IF NOT EXISTS profiles (profile_id integer PRIMARY KEY, 
                                                                 weight integer,
                                                                 age integer);"""
-        createWorkout = """CREATE TABLE IF NOT EXISTS workouts (duration real,
-                                                                focus text,
+        createWorkout = """CREATE TABLE IF NOT EXISTS workouts (focus text,
+                                                                duration real,
                                                                 timeStart timestamp,
                                                                 timeEnd timestamp,
                                                                 calories real,

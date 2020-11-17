@@ -133,7 +133,7 @@ class LungePostureAnalysis:
         if (int(knee[0]) == 0 and int(knee[1]) == 0):
             self.lunge.invalid.append(4)
         
-        if int(otherKnee[0]) == 0 and int(otherKnee[1]) == 0):
+        if (int(otherKnee[0]) == 0 and int(otherKnee[1]) == 0):
             self.lunge.invalid.append(5)
 
         if (int(ankle[0]) == 0 and int(ankle[1]) == 0):
