@@ -186,12 +186,10 @@ class PushupPostureAnalysis:
         # if not (self.greaterThan(line1Slope, slopeOfShoulder)):
         #     self.pushup.check3 = True 
 
-        # print(line2Slope)
-        # print(line3Slope)
-        # print(self.greaterThan(line2Slope, line3Slope))
+  
 
-        # if not (self.sameSlope(line2Slope, line3Slope)):
-        #     self.pushup.check3 = True
+        if not (self.sameSlope(line1Slope, line3Slope)):
+            self.pushup.check3 = True
 
 
         if not (self.greaterThan(wrist[0], knee[0]) and self.greaterThan(wrist[0], ankle[0])):

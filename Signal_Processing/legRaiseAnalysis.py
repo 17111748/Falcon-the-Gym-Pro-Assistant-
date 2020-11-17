@@ -159,15 +159,15 @@ class LegRaisePostureAnalysis:
 # under = [(92.5, 32.5), (96.5, 48.5), (97.0, 66.0), (89.5, 56.0), (49.5, 81.5), (90.0, 59.0), (33.5, 90.5), (0.0, 0.0)]
 # kneeBent = [(92.0, 33.0), (96.5, 48.5), (97.0, 65.0), (89.5, 56.5), (45.5, 63.5), (51.0, 70.0), (31.0, 77.0), (35.5, 80.5)]
 
-invalid = [(0.0, 0.0), (29.5, 80.5), (15.5, 87.5), (49.5, 88.5), (65.0, 127.5), (96.5, 66.5), (84.5, 118.5), (92.0, 48.5)]
+# invalid = [(0.0, 0.0), (29.5, 80.5), (15.5, 87.5), (49.5, 88.5), (65.0, 127.5), (96.5, 66.5), (84.5, 118.5), (92.0, 48.5)]
 
 
-legRaise = LegRaisePostureAnalysis()
+# legRaise = LegRaisePostureAnalysis()
 
-legRaise.feedbackCalculation(invalid)
-result = legRaise.getResult()
-print("Invalid: " + str(result))
-print("\n")
+# legRaise.feedbackCalculation(invalid)
+# result = legRaise.getResult()
+# print("Invalid: " + str(result))
+# print("\n")
 
 # legRaise.feedbackCalculation(perfect)
 # result = legRaise.getResult()
