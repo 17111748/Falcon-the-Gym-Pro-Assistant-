@@ -95,6 +95,8 @@ def initConstants(d):
     d.SETS_PER_WORKOUT = 3
     d.SET_BREAK_TIME = 5
     d.RESUME_TIME = 3
+    #about 2s at 0.04s per rep
+    d.END_SET_FRAME_COUNT = 50
 
 def initPyCamera(d):
     #setup pygame/camera
@@ -120,11 +122,6 @@ def initFrames(d):
         "l": 88,
         "u": 55
     }
-    
-    d.endFeedbackFrame = {
-        "c": 16,
-        
-    }
 
     #based on rolling AVG of d.clock.tick() of 40ms
     d.timePerFrame = 0.04
@@ -136,7 +133,7 @@ def initFrames(d):
     }
 
 def initNewWorkout(d):
-    d.currSet = 2
+    d.currSet = 3
     d.calBurned = 0 
     d.currWorkoutFrame = 0
     d.currentRep = 1
@@ -192,7 +189,10 @@ def initWorkouts(d):
     d.justResumed = False
     d.pause = False
 
+    d.displayFeedback = ""
+
     d.workoutStopwatch = stopwatch()
+    d.feedbackStopwatch = stopwatch()
     initNewWorkout(d)
 
 def initDBProfile(d):
@@ -261,6 +261,7 @@ def updateTimeText(d,newSet,timeTextResumePause):
                 totalTime-=d.SET_BREAK_TIME
             for i in range(d.currSet-1,d.SETS_PER_WORKOUT):
                 totalTime+= d.workoutRepTime[d.workoutSets[d.workoutFocus][i]]*d.REPS_PER_SET
+                totalTime+=d.END_SET_FRAME_COUNT*d.timePerFrame
             d.timeRemaining = totalTime
         else:
             d.timeRemaining-=1
@@ -280,8 +281,14 @@ def updateBreakString(d):
     breakStr = "Next set in "+str(d.breakTime)+" seconds     "
     if(d.breakTime==1):
         breakStr = "Next set in "+str(d.breakTime)+" second        "
-    textLoc = (int(d.WINDOW_WIDTH*0.52), int(d.WINDOW_HEIGHT*0.02))
-    breakText = Text(breakStr,textLoc,60,color.red,topmode=True)
+    textLoc = (int(d.WINDOW_WIDTH*0.45), int(d.WINDOW_HEIGHT*0.02))
+    breakText = Text(breakStr,textLoc,60,color.blue,topmode=True)
+    breakText.draw(d)
+
+def updateFeedbackString(d):
+    fString = d.displayFeedback
+    textLoc = (int(d.WINDOW_WIDTH*0.45), int(d.WINDOW_HEIGHT*0.11))
+    breakText = Text(fString,textLoc,45,color.red,topmode=True)
     breakText.draw(d)
 
 def updateResumeTimeText(d):
@@ -290,8 +297,8 @@ def updateResumeTimeText(d):
         resumeStr = "Resuming in "+str(d.resumeFromPause)+" second        "
     elif(d.resumeFromPause<0):
         resumeStr = (len(resumeStr)*2)*" "
-    textLoc = (int(d.WINDOW_WIDTH*0.52), int(d.WINDOW_HEIGHT*0.02))
-    resumeText = Text(resumeStr,textLoc,60,color.red,topmode=True)
+    textLoc = (int(d.WINDOW_WIDTH*0.45), int(d.WINDOW_HEIGHT*0.02))
+    resumeText = Text(resumeStr,textLoc,60,color.blue,topmode=True)
     resumeText.draw(d)
 
 def updateCalText(d,workout,reset):
@@ -320,6 +327,12 @@ def updateHRText(d,workout):
 
 def drawWorkout(d):
     if(not d.pause):
+        if(d.feedbackStopwatch.getTime()>2):
+            d.feedbackStopwatch.reset()
+            d.displayFeedback=(len(d.displayFeedback)*3)*" "
+        updateFeedbackString(d)
+
+
         if(d.newWorkout):
             initNewWorkout(d)
             d.newWorkout = False
@@ -327,8 +340,13 @@ def drawWorkout(d):
             d.beginWorkoutTime = datetime.datetime.now()
         # test threading
         if(not data.threadQueue.empty()):
-            print(data.threadQueue.get())
-
+            feedback = data.threadQueue.get()
+            if(len(feedback)>0):
+                d.displayFeedback = feedback[0]
+            else:
+                d.displayFeedback = "Perfect Rep!"
+            d.feedbackStopwatch.reset()
+            d.feedbackStopwatch.start()
         currentWorkout = d.workoutSets[d.workoutFocus][d.currSet-1]
         timeTextResumePause = True
         if(d.newScreen):
@@ -397,8 +415,9 @@ def drawWorkout(d):
                 if(d.justResumed and d.currWorkoutFrame>0):
                     d.currWorkoutFrame-=1
                 d.justResumed = False
-                #incrementing rep if needed
-                if(d.currWorkoutFrame>=d.workoutTotalFrames[currentWorkout]):
+                #incrementing rep if needed, if last rep of set use extra frames
+                if((d.currWorkoutFrame>=d.workoutTotalFrames[currentWorkout] and d.currentRep<d.REPS_PER_SET)
+                    or d.currWorkoutFrame>=d.workoutTotalFrames[currentWorkout]+d.END_SET_FRAME_COUNT):
                     d.currentRep+=1   
                     d.currWorkoutFrame=0
                     #next set
@@ -536,19 +555,19 @@ def pygameHandleEvent(d):
             sys.exit(0)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                print(d.workoutStopwatch.getTime())
                 if(d.currentScreen == screenMode.WORKOUT):
                     if(d.pause):
+                        d.feedbackStopwatch.start()
                         d.newScreen = True
                         if(d.breakTime<0):
                             d.resumeFromPause = d.RESUME_TIME
                             d.justResumed = True
                         d.pause = False
                     else:
+                        d.feedbackStopwatch.stop()
+                        d.workoutStopwatch.stop()
                         drawPause(d)
                         d.pause = True
-                        d.workoutStopwatch.stop()
-
 data = data()
 init(data)
 main(data)
