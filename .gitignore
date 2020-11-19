@@ -2,4 +2,6 @@
 .vscode/
 .venv/
 *.pyc
-.__pycache__
+/Signal_Processing/__pycache__
+*.cpython-36.pyc
+*.pyc
