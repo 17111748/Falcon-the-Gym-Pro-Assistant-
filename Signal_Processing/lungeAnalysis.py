@@ -117,36 +117,32 @@ class LungePostureAnalysis:
     # Line 5: Shoulder - Hip 
     def feedbackCalculation(self, bodyParts, default=True):
 
-        shoulder = bodyParts[0]
-        hip = bodyParts[3]
-        defaultKnee = bodyParts[4]
-        otherKnee = bodyParts[5]
-        defaultAnkle = bodyParts[6]
-        otherAnkle = bodyParts[7]
+        hip = (int(bodyParts[3][0]), int(bodyParts[3][1])) 
+        defaultKnee = (int(bodyParts[4][0]), int(bodyParts[4][1])) 
+        otherKnee = (int(bodyParts[5][0]), int(bodyParts[5][1])) 
+        defaultAnkle = (int(bodyParts[6][0]), int(bodyParts[6][1])) 
+        otherAnkle = (int(bodyParts[7][0]), int(bodyParts[7][1])) 
 
-        if (int(shoulder[0]) == 0 and int(shoulder[1]) == 0):
-            self.lunge.invalid.append(0)  
-
-        if (int(hip[0]) == 0 and int(hip[1]) == 0):
+        if (hip[0] == 0 and hip[1] == 0):
             self.lunge.invalid.append(3)
             
-        if (int(defaultKnee[0]) == 0 and int(defaultKnee[1]) == 0):
+        if (defaultKnee[0] == 0 and defaultKnee[1] == 0):
             self.lunge.invalid.append(4)
         
-        if (int(otherKnee[0]) == 0 and int(otherKnee[1]) == 0):
+        if (otherKnee[0] == 0 and otherKnee[1] == 0):
             self.lunge.invalid.append(5)
 
-        if (int(defaultAnkle[0]) == 0 and int(defaultAnkle[1]) == 0):
+        if (defaultAnkle[0] == 0 and defaultAnkle[1] == 0):
             self.lunge.invalid.append(6) 
         
-        if (int(otherAnkle[0]) == 0 and int(otherAnkle[1]) == 0):
+        if (otherAnkle[0] == 0 and otherAnkle[1] == 0):
             self.lunge.invalid.append(7)
 
         if (default == False):
-            defaultKnee = bodyParts[5]
-            otherKnee = bodyParts[4]
-            defaultAnkle = bodyParts[7]
-            otherAnkle = bodyParts[6]
+            defaultKnee = (int(bodyParts[5][0]), int(bodyParts[5][1])) 
+            otherKnee = (int(bodyParts[4][0]), int(bodyParts[4][1])) 
+            defaultAnkle = (int(bodyParts[7][0]), int(bodyParts[7][1])) 
+            otherAnkle = (int(bodyParts[6][0]), int(bodyParts[6][1])) 
 
         line1Slope = self.getSlope(hip, defaultKnee)
         # line2Slope = self.getSlope(defaultKnee, defaultAnkle)
@@ -161,11 +157,10 @@ class LungePostureAnalysis:
         frontLegSlope = -0.75
         backLegSlope = 2
 
-        # # Front Leg too forward
-        # print(defaultKnee[1])
-        # print(defaultAnkle[1])
-        # print(self.samePos(defaultKnee[1], defaultAnkle[1], 2))
-        # print(defaultKnee[1] > defaultAnkle[1])
+        # Front Leg too forward
+        print(defaultKnee[1])
+        print(defaultAnkle[1])
+        
 
         # # Go Lower
         # print(otherAnkle[0])
@@ -181,9 +176,8 @@ class LungePostureAnalysis:
         # print(self.greaterThan(line3Slope, backLegSlope))
         # print(self.sameAngle(angleOtherKnee, perpendicular))
 
-        if not (self.samePos(defaultKnee[1], defaultAnkle[1], 5)):
-            if (defaultKnee[1] > defaultAnkle[1]):
-                self.lunge.check1 = True
+        if not (self.lessThan(defaultKnee[1], defaultAnkle[1], 6)):
+            self.lunge.check1 = True
 
         if not (self.lessThan(otherAnkle[0], otherKnee[0], 1) and self.greaterThan(line1Slope, frontLegSlope, 0.1)):
             self.lunge.check2 = True
