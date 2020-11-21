@@ -82,9 +82,9 @@ def sendPicture(d,workout):
 
 def initConstants(d):
     #toggles
-    d.UART = False
-    d.sendPicTest = True
-    d.useRandomPics = True
+    d.UART = True
+    d.sendPicTest = False
+    d.useRandomPics = False
 
     #constants
     d.FRAME_FREQUENCY = 100
@@ -98,7 +98,7 @@ def initConstants(d):
        "l_l": os.path.join("UI", "images", "lunge_left", ""),
        "u": os.path.join("UI", "images", "push_up", "")
     }
-    d.REPS_PER_SET = 3
+    d.REPS_PER_SET = 100
     d.SETS_PER_WORKOUT = 3
     d.SET_BREAK_TIME = 5
     d.RESUME_TIME = 3
@@ -112,8 +112,8 @@ def initConstants(d):
 
 def initPyCamera(d):
     #setup pygame/camera
-    d.camera  = cv2.VideoCapture(0)
-    # d.camera = cv2.VideoCapture(1)
+    # d.camera  = cv2.VideoCapture(0)
+    d.camera = cv2.VideoCapture(1)
     if not d.camera.isOpened():
         print("Could not open video device")
     pygame.init()
@@ -145,7 +145,7 @@ def initFrames(d):
     }
 
 def initNewWorkout(d):
-    d.currSet = 1
+    d.currSet = 3
     d.calBurned = 0 
     d.currWorkoutFrame = 0
     d.currentRep = 1
@@ -214,8 +214,9 @@ def initDBProfile(d):
     #imperial (inches, pounds)
     d.currProfile = d.db.getLastProfile()
     profileData = d.db.getProfile(d.currProfile)
-    d.age = profileData[1]
-    d.weight = profileData[2]
+    d.age = profileData[2]
+    d.weight = profileData[1]
+    print(d.weight,d.age,"user weight")
 
 def initAnalysis(d):
     if(d.UART):
