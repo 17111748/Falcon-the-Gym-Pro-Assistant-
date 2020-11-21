@@ -34,14 +34,19 @@ def sendPicture(d,workout):
     }
 
     randInt = random.randint(0,len(workoutPhotos[workout])-1)
-   
-    original_image = Image.open(sample_image_dir+workoutPhotos[workout][randInt])
+
+    
+    original_image = None
+    if(d.useRandomPics):
+        original_image = Image.open(sample_image_dir+workoutPhotos[workout][randInt])
+    else:
+        original_image = Image.open(d.CAPTURE_IMAGE)
     original_image_pixels = original_image.load()
 
     new_image = original_image.resize((resized_col, resized_row))
     converted_image = new_image.convert('HSV')
     # converted_pixel = converted_image.load()
-    byte_arr = converted_image.tobytes()
+    byte_arr = d.UART_WORKOUT_KEY[workout]+converted_image.tobytes()
 
     locationArray = []
     if(not d.sendPicTest):
@@ -53,8 +58,7 @@ def sendPicture(d,workout):
         while ("\n" not in data_received.decode("utf-8")):
             data_received = d.ser.read(d.ser.in_waiting)
             total += data_received
-            # if(len(data_received) != 0):
-            #     print(data_received.decode("utf-8"))
+
         coord_string = total.decode("utf-8")
         locationArray = convertString(coord_string[:-2]) # getting rid of the \n 
         print(locationArray)
@@ -80,15 +84,18 @@ def initConstants(d):
     #toggles
     d.UART = False
     d.sendPicTest = True
+    d.useRandomPics = True
 
     #constants
     d.FRAME_FREQUENCY = 100
     d.WINDOW_WIDTH = 1280
     d.WINDOW_HEIGHT = int(d.WINDOW_WIDTH/1.6)
     d.LIVE_VIDEO_DIMS = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.5))
+    d.CAPTURE_IMAGE = os.path.join("captured.png")
     d.IMAGE_DIR = {
        "c": os.path.join("UI", "images", "leg_raise", ""),
-       "l": os.path.join("UI", "images", "lunge", ""),
+       "l_r": os.path.join("UI", "images", "lunge_right", ""),
+       "l_l": os.path.join("UI", "images", "lunge_left", ""),
        "u": os.path.join("UI", "images", "push_up", "")
     }
     d.REPS_PER_SET = 3
@@ -97,6 +104,11 @@ def initConstants(d):
     d.RESUME_TIME = 3
     #about 2s at 0.04s per rep
     d.END_SET_FRAME_COUNT = 50
+    d.UART_WORKOUT_KEY = {
+        "l": b'\x00',
+        "u": b'\x01',
+        "c": b'\x02' 
+    }
 
 def initPyCamera(d):
     #setup pygame/camera
@@ -133,7 +145,7 @@ def initFrames(d):
     }
 
 def initNewWorkout(d):
-    d.currSet = 3
+    d.currSet = 1
     d.calBurned = 0 
     d.currWorkoutFrame = 0
     d.currentRep = 1
@@ -162,8 +174,9 @@ def initWorkouts(d):
     }
     d.workoutNames = {
         "c": "Leg Raise",
-        "l": "Lunges",
-        "u": "Push-Ups"
+        "l_r": "Lunge (Right Forward)   ",
+        "l_l": "Lunge (Left Forward)   ",
+        "u": "Push-Up"
     }
     d.workoutFocus = "core"
 
@@ -242,7 +255,10 @@ def updateRepText(d):
     repText.draw(d)
 
 def updateWorkoutText(d,currentWorkout):
-    workStr = d.workoutNames[currentWorkout]
+    actualWorkout = currentWorkout 
+    if(currentWorkout=="l"):
+        actualWorkout = "l_r" if (d.currentRep%2==1) else "l_l"
+    workStr = d.workoutNames[actualWorkout]
     textLoc = (int(d.WINDOW_WIDTH*0.025), int(d.WINDOW_HEIGHT*0.025))
     workText = Text(workStr,textLoc,50,color.black,topmode=True)
     workText.draw(d)
@@ -374,8 +390,8 @@ def drawWorkout(d):
                 updateBreakString(d)
 
             #draw divider line
-            start_line_loc = (int(d.WINDOW_WIDTH*0.45),int(d.WINDOW_HEIGHT*0.225))
-            end_line_loc = (int(d.WINDOW_WIDTH*0.45),int(d.WINDOW_HEIGHT*0.85))
+            start_line_loc = (int(d.WINDOW_WIDTH*0.45),int(d.WINDOW_HEIGHT*0.28))
+            end_line_loc = (int(d.WINDOW_WIDTH*0.45),int(d.WINDOW_HEIGHT*0.92))
             pygame.draw.line(d.screen, color.black, start_line_loc, end_line_loc, 3)
 
             d.beginTime = pygame.time.get_ticks()
@@ -388,7 +404,7 @@ def drawWorkout(d):
         frame = cv2.resize(frame, d.LIVE_VIDEO_DIMS, interpolation = cv2.INTER_AREA)
         frame = frame.swapaxes(0,1)
         frame = cv2.flip(frame,0)
-        live_loc = (int(d.WINDOW_WIDTH*0.48),int(d.WINDOW_HEIGHT*0.275))
+        live_loc = (int(d.WINDOW_WIDTH*0.48),int(d.WINDOW_HEIGHT*0.35))
         d.screen.blit(d.live_video, live_loc)
         pygame.surfarray.blit_array(d.live_video, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
@@ -396,11 +412,9 @@ def drawWorkout(d):
         if(d.currWorkoutFrame == d.captureFrame[currentWorkout] and d.breakTime<0 and d.resumeFromPause<0):
             #TODO
             toDownsize = frame.swapaxes(0,1)
-            # print('photo captured')
-            # Depending on exercise add a d.ser.write before you write the byte_arr.
-            # Write \x00 for lunges, \x01 for push ups, x\02 for leg raise
-            # d.ser.write(b'\x01')
-            # d.ser.write(byte_arr)
+            cv2.imwrite(d.CAPTURE_IMAGE,toDownsize)
+            print('photo captured')
+
             if(d.UART or d.sendPicTest):
                 serialThread = threading.Thread(target=sendPicture,name="FPGA_SERIAL",args=[d,currentWorkout],daemon=True)
                 serialThread.start()
@@ -439,12 +453,16 @@ def drawWorkout(d):
                         d.newScreen=True
                         return True
                     updateRepText(d)
+                    updateWorkoutText(d,currentWorkout)
 
                 #update model image
-                modelLocation = (int(d.WINDOW_WIDTH*0.02), int(d.WINDOW_HEIGHT*0.31))
-                d.screen.blit(pygame.image.load(d.IMAGE_DIR[currentWorkout]+"{:03n}".format(d.currWorkoutFrame)+'.gif'),modelLocation)
-                d.currWorkoutFrame+=1
+                modelLocation = (int(d.WINDOW_WIDTH*0.02), int(d.WINDOW_HEIGHT*0.35))
+                imCurrentWorkout = currentWorkout
+                if(currentWorkout=="l"):
+                    imCurrentWorkout = "l_r" if (d.currentRep%2==1) else "l_l"
 
+                d.screen.blit(pygame.image.load(d.IMAGE_DIR[imCurrentWorkout]+"{:03n}".format(d.currWorkoutFrame)+'.gif'),modelLocation)
+                d.currWorkoutFrame+=1
         #timer based (time left, next set break, resume, calories burned)
         currTime = pygame.time.get_ticks()
         if(currTime-d.beginTime>1000):

@@ -158,8 +158,8 @@ class LungePostureAnalysis:
         backLegSlope = 2
 
         # Front Leg too forward
-        print(defaultKnee[1])
-        print(defaultAnkle[1])
+        # print(defaultKnee[1])
+        # print(defaultAnkle[1])
         
 
         # # Go Lower
