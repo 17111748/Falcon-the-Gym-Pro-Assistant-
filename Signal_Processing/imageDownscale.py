@@ -7,155 +7,167 @@ import time
 resized_row = 120
 resized_col = 160 
 
-def writeFile(matrix, path):
-    string = ""
-    for row in matrix: 
-        ans = ""
-        for col in row: 
-            if(col == 1):
-                print("bob")
-            ans += str(col) + ", "
-        ans += "\n"
-        string += ans
+# def writeFile(matrix, path):
+#     string = ""
+#     for row in matrix: 
+#         ans = ""
+#         for col in row: 
+#             if(col == 1):
+#                 print("bob")
+#             ans += str(col) + ", "
+#         ans += "\n"
+#         string += ans
 
-    with open(path, "wt") as f:
-        f.write(string)
+#     with open(path, "wt") as f:
+#         f.write(string)
 
-def outputImage(temp_image, imageMask, path):
-    temp_pixel = temp_image.load()
+# def outputImage(temp_image, imageMask, path):
+#     temp_pixel = temp_image.load()
 
-    for row in range(resized_row):
-        for col in range(resized_col):
-            temp_pixel[col, row] = (255, 255, 255) 
-            if (imageMask[row][col] == 1):
-                temp_pixel[col, row] = (0, 0, 0) 
-    temp_image.save(path)
+#     for row in range(resized_row):
+#         for col in range(resized_col):
+#             temp_pixel[col, row] = (255, 255, 255) 
+#             if (imageMask[row][col] == 1):
+#                 temp_pixel[col, row] = (0, 0, 0) 
+#     temp_image.save(path)
 
-def printMat(matrix):
-    for row in matrix: 
-        print(row)
-    print("\n\n")
-
-originalPath = 'images/Nov/pushUp/HandForward.png'
-downscalePath = 'images/Nov/pushUp/HandForward_160x120.png'
-trackDownscale = 'images/Nov/pushUp/track_Forward.png'
-endpath = 'images/Nov/pushUp/findPixels.png'
+# def printMat(matrix):
+#     for row in matrix: 
+#         print(row)
+#     print("\n\n")
 
 
-time0 = time.time()
-# Read Image and Downscale the image 
-original_image = Image.open(originalPath)
-original_image_pixels = original_image.load()
+# # originalPath = 'images/iphone/color.jpg'
+# # downscalePath = 'images/iphone/color_160x120.png'
+# # trackDownscale = 'images/iphone/track_color_160x120.png'
+# # endpath = 'images/iphone/find_Pixels.png'
 
-new_image = original_image.resize((resized_col, resized_row))
-new_image_pixels = new_image.load()
-new_image.save(downscalePath)
-
-
-temp_image = Image.open(downscalePath)
-converted_image = temp_image.convert('HSV')
-converted_pixel = converted_image.load()
+# originalPath = 'images/temp/test3.png'
+# downscalePath = 'images/temp/temp_160x120.png'
+# trackDownscale = 'images/temp/track_160x120.png'
+# endpath = 'images/temp/findPixels.png'
 
 
+# time0 = time.time()
+# # Read Image and Downscale the image 
+# original_image = Image.open(originalPath)
+# original_image_pixels = original_image.load()
 
-# Delete Afterward
-track_image = Image.open(downscalePath)
-track_image_pixels = track_image.load()
+# new_image = original_image.resize((resized_col, resized_row))
+# new_image_pixels = new_image.load()
+# new_image.save(downscalePath)
 
-row = 88
-col = 60
-size = 1
-done = False
-for temp_r in range(resized_row):
-    for temp_c in range(resized_col):
-        r = temp_r
-        c = temp_c
-        if abs(r - row) < (size) and abs(c - col) < (size): 
+
+# temp_image = Image.open(downscalePath)
+# converted_image = temp_image.convert('HSV')
+# converted_pixel = converted_image.load()
+
+
+
+# # Delete Afterward
+# track_image = Image.open(downscalePath)
+# track_image_pixels = track_image.load()
+
+# row = 88
+# col = 60
+# size = 1
+# done = False
+# for temp_r in range(resized_row):
+#     for temp_c in range(resized_col):
+#         r = temp_r
+#         c = temp_c
+#         if abs(r - row) < (size) and abs(c - col) < (size): 
             
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c, r]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+1, r]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c, r+1]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c-1, r-1]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+1, r+1]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+2, r+2]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+3, r+3]))
-            print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+4, r+4]))
-            done = True
-            track_image_pixels[c, r] = (255, 10, 10)#(255, 10, 10)
-            track_image_pixels[c+1, r] = (255, 10, 10)
-            track_image_pixels[c, r+1] = (255, 10, 10)
-            track_image_pixels[c-1, r-1] = (255, 10, 10)
-            track_image_pixels[c+1, r+1] = (255, 10, 10)
-            track_image_pixels[c+2, r+2] = (255, 10, 10)
-            track_image_pixels[c+3, r+3] = (255, 10, 10)
-            track_image_pixels[c+4, r+4] = (255, 10, 10)
-    if(done):
-        print("break")
-        done = False
+#             print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c, r]))
+#             print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+1, r]))
+#             print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c, r+1]))
+#             print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c-1, r-1]))
+#             print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+1, r+1]))
+#             print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+2, r+2]))
+#             print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+3, r+3]))
+#             print(str(r) + "x" + str(c) + ": " + str(converted_pixel[c+4, r+4]))
+#             done = True
+#             track_image_pixels[c, r] = (255, 10, 10)#(255, 10, 10)
+#             track_image_pixels[c+1, r] = (255, 10, 10)
+#             track_image_pixels[c, r+1] = (255, 10, 10)
+#             track_image_pixels[c-1, r-1] = (255, 10, 10)
+#             track_image_pixels[c+1, r+1] = (255, 10, 10)
+#             track_image_pixels[c+2, r+2] = (255, 10, 10)
+#             track_image_pixels[c+3, r+3] = (255, 10, 10)
+#             track_image_pixels[c+4, r+4] = (255, 10, 10)
+#     if(done):
+#         print("break")
+#         done = False
 
-track_image.save(trackDownscale)
-# Use this as the final 
-image = converted_image
-pixels = converted_pixel
+# # track_image.save(trackDownscale)
 
 
-# 142x98 (pushupDown)
-# Lower: (17, 87, 160)
-# Upper: (29, 133, 246)
-shoulderOrangeL = (17, 87, 160)
-shoulderOrangeU = (29, 133, 246)
+# # Use this as the final 
+# image = converted_image
+# pixels = converted_pixel
 
 
-# 131x99 (pushupDown)
-# Lower: (155, 124, 150)
-# Upper: (160, 140, 225)
-elbowBlueL = (155, 124, 150)
-elbowBlueU = (160, 140, 225)
-
-# 133x114 (pushupDown)
-# Lower: (171, 55, 140)
-# Upper: (187, 94, 157)
-wristPurpleL = (171, 55, 87)
-wristPurpleU = (192, 94, 157)
-
-# 116x105 (pushupDown)
-# Lower: (42, 70, 209)
-# Upper: (45, 100, 250)
-hipYellowL = (38, 65, 165)
-hipYellowU = (45, 100, 253)
-
-# 65x105 size 6x3
-# Lower: (239, 73, 133)
-# Upper: (253, 134, 202)
-kneeRedL = (239, 64, 133)
-kneeRedU = (252, 137, 216)
-
-# Lower: (50, 45, 160)
-# Upper: (60, 65, 240)
-kneeOtherGreenL = (47, 45, 111)
-kneeOtherGreenU = (60, 74, 240)
-
-# 39x107 (pushupDown)
-# Lower: (130, 52, 200)
-# Upper: (141, 78, 243)
-ankleBlueL = (125, 52, 127)
-ankleBlueU = (141, 78, 243)
-
-# Lower: (210, 30, 170)
-# Upper: (242, 82, 250)
-ankleOtherPinkL = (210, 30, 170)
-ankleOtherPinkU = (242, 82, 250)
-
-bodyHSVBounds = [(shoulderOrangeL, shoulderOrangeU), (elbowBlueL, elbowBlueU), 
-                 (wristPurpleL, wristPurpleU), (hipYellowL, hipYellowU), 
-                 (kneeRedL, kneeRedU), (kneeOtherGreenL, kneeOtherGreenU), 
-                 (ankleBlueL, ankleBlueU), (ankleOtherPinkL, ankleOtherPinkU)]
+# # 142x98 (pushupDown)
+# # Lower: (17, 87, 160)
+# # Upper: (29, 133, 246)
+# shoulderOrangeL = (17, 87, 160)
+# shoulderOrangeU = (29, 133, 246)
 
 
+# # 131x99 (pushupDown)
+# # Lower: (155, 124, 150)
+# # Upper: (160, 140, 225)
+# elbowBlueL = (155, 124, 150)
+# elbowBlueU = (160, 140, 225)
+
+# # 133x114 (pushupDown)
+# # Lower: (171, 55, 140)
+# # Upper: (187, 94, 157)
+# wristPurpleL = (171, 55, 87)
+# wristPurpleU = (192, 94, 157)
+
+# # 116x105 (pushupDown)
+# # Lower: (42, 70, 209)
+# # Upper: (45, 100, 250)
+# hipYellowL = (38, 65, 165)
+# hipYellowU = (45, 100, 253)
+
+# # 65x105 size 6x3
+# # Lower: (239, 73, 133)
+# # Upper: (253, 134, 202)
+# kneeRedL = (239, 64, 133)
+# kneeRedU = (252, 137, 216)
+
+# # Lower: (50, 45, 160)
+# # Upper: (60, 65, 240)
+# kneeOtherGreenL = (47, 45, 111)
+# kneeOtherGreenU = (60, 74, 240)
+
+# # 39x107 (pushupDown)
+# # Lower: (130, 52, 200)
+# # Upper: (141, 78, 243)
+# ankleBlueL = (125, 52, 127)
+# ankleBlueU = (141, 78, 243)
+
+# # Lower: (210, 30, 170)
+# # Upper: (242, 82, 250)
+# ankleOtherPinkL = (210, 30, 170)
+# ankleOtherPinkU = (242, 82, 250)
+
+# bodyHSVBounds = [(shoulderOrangeL, shoulderOrangeU), (elbowBlueL, elbowBlueU), 
+#                  (wristPurpleL, wristPurpleU), (hipYellowL, hipYellowU), 
+#                  (kneeRedL, kneeRedU), (kneeOtherGreenL, kneeOtherGreenU), 
+#                  (ankleBlueL, ankleBlueU), (ankleOtherPinkL, ankleOtherPinkU)]
+
+def picToPix(picture):
+    original_image = Image.open(picture)
+    new_image = original_image.resize((resized_col, resized_row))
+    converted_image = new_image.convert('HSV')
+    converted_pixel = converted_image.load()
+    return converted_pixel
 
 
-
-def jointTracking(lowerMask, upperMask): 
+def jointTracking(lowerMask, upperMask, pixels): 
     imageMask = []
     for row in range(resized_row):
         imageRowMask = [0] * resized_col 
@@ -296,84 +308,103 @@ def testing(imageMask):
             if(imageMask[i][j] == 1):
                 print(str(i) + ", " + str(j))
 
-def mainFunction(bodyHSVBounds): 
-    resized_row = 120
-    resized_col = 160 
-    positions = []
-    count = 0
-
-
-    for bodyPart in bodyHSVBounds: 
-        lowerMask = bodyPart[0]
-        upperMask = bodyPart[1]
-        imageMask = jointTracking(lowerMask, upperMask)
-        imageMask = dilation(imageMask)
-        imageMask = dilation(imageMask)
-        imageMask = erosion(imageMask)
-
-        # # writeFile(imageMask, "erosion.txt")
-        # imageMask = dilation(imageMask)
-        # testing(imageMask)
-        # print("Test")
-
-        (row, col) = getCenter(imageMask, resized_row, resized_col)
-        positions.append((row, col))
-        count += 1
-    
-    return positions
-
-
-
 # def mainFunction(bodyHSVBounds): 
 #     resized_row = 120
 #     resized_col = 160 
 #     positions = []
-#     count = 0
+
+    
 #     for bodyPart in bodyHSVBounds: 
 #         lowerMask = bodyPart[0]
 #         upperMask = bodyPart[1]
 #         imageMask = jointTracking(lowerMask, upperMask)
-        
 #         imageMask = dilation(imageMask)
 #         imageMask = dilation(imageMask)
 #         imageMask = erosion(imageMask)
-
 #         (row, col) = getCenter(imageMask, resized_row, resized_col)
 #         positions.append((row, col))
-#         count += 1
     
 #     return positions
 
 
-positions = mainFunction(bodyHSVBounds)
+# positions = mainFunction(bodyHSVBounds)
 
+# print(positions)
 
+# track_image = Image.open(downscalePath)
+# track_image_pixels = track_image.load()
 
+# imageMask = []
+# for r in range(resized_row):
+#     temp = [0] * resized_col
+#     imageMask.append(temp)
 
-print(positions)
+# for posIndex in range(len(positions)):
+#     pos = positions[posIndex]
+#     row = int(pos[0])
+#     col = int(pos[1])
+#     size = 2
+#     done = False
 
-track_image = Image.open(downscalePath)
-track_image_pixels = track_image.load()
-
-imageMask = []
-for r in range(resized_row):
-    temp = [0] * resized_col
-    imageMask.append(temp)
-
-for posIndex in range(len(positions)):
-    pos = positions[posIndex]
-    row = int(pos[0])
-    col = int(pos[1])
-    size = 2
-    done = False
-
-    for r in range(resized_row):
-        for c in range(resized_col):
-            if abs(r - row) < (size) and abs(c - col) < (size): 
-                done = True
-                track_image_pixels[c, r] = (100, 100, 255) #(255, 10, 10)
-        if(done):
-            done = False
+#     for r in range(resized_row):
+#         for c in range(resized_col):
+#             if abs(r - row) < (size) and abs(c - col) < (size): 
+#                 done = True
+#                 track_image_pixels[c, r] = (100, 100, 255) #(255, 10, 10)
+#         if(done):
+#             done = False
     
-track_image.save(endpath)
+# track_image.save(endpath)
 
+
+
+def mainFunction(bodyHSVBounds, picture): 
+    resized_row = 120
+    resized_col = 160 
+    positions = []
+
+    pixels = picToPix(picture)
+    for bodyPart in bodyHSVBounds: 
+        lowerMask = bodyPart[0]
+        upperMask = bodyPart[1]
+        imageMask = jointTracking(lowerMask, upperMask, pixels)
+        imageMask = dilation(imageMask)
+        imageMask = dilation(imageMask)
+        imageMask = erosion(imageMask)
+        (row, col) = getCenter(imageMask, resized_row, resized_col)
+        positions.append((row, col))
+    
+    return positions
+
+def getJoints(picture):
+    shoulderOrangeL = (17, 87, 160)
+    shoulderOrangeU = (29, 133, 246)
+
+    elbowBlueL = (142, 79, 150)
+    elbowBlueU = (160, 140, 252)
+
+    wristPurpleL = (156, 50, 87)
+    wristPurpleU = (192, 94, 193)
+
+    hipYellowL = (38, 65, 165)
+    hipYellowU = (45, 100, 253)
+
+    kneeRedL = (239, 64, 133)
+    kneeRedU = (252, 137, 216)
+
+    kneeOtherGreenL = (47, 45, 111)
+    kneeOtherGreenU = (60, 74, 240)
+
+    ankleBlueL = (125, 52, 127)
+    ankleBlueU = (141, 78, 243)
+
+    ankleOtherPinkL = (210, 30, 170)
+    ankleOtherPinkU = (242, 82, 250)
+
+    bodyHSVBounds = [(shoulderOrangeL, shoulderOrangeU), (elbowBlueL, elbowBlueU), 
+                    (wristPurpleL, wristPurpleU), (hipYellowL, hipYellowU), 
+                    (kneeRedL, kneeRedU), (kneeOtherGreenL, kneeOtherGreenU), 
+                    (ankleBlueL, ankleBlueU), (ankleOtherPinkL, ankleOtherPinkU)]
+
+
+    return mainFunction(bodyHSVBounds, picture)

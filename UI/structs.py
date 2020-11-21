@@ -1,6 +1,7 @@
 import enum
 import pygame
 from UI.colors import *
+import os
 
 class data(object):
     pass
@@ -10,11 +11,12 @@ class screenMode(enum.Enum):
     WORKOUT = 2
     PAUSE = 3
     SUMMARY = 4
+    HISTORY = 5
 
 class Text(object):
     def __init__(self,text,location, size = 60,col = color.white,topmode = False,transparent=False):
         self.location = location
-        self.myfont = pygame.font.Font("UI\\resources\SFProDisplay-Thin.ttf", int(size))
+        self.myfont = pygame.font.Font(os.path.join("UI", "resources", "SFProDisplay-Thin.ttf"), int(size))
         self.label = self.myfont.render((text), True, col, color.white)
         if(transparent):
             self.label = self.myfont.render((text), True, col, None)

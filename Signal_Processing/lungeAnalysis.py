@@ -17,7 +17,7 @@ class LungeResult:
     # Feedback
     def __init__(self):
         self.feedback = [] 
-        self.invalid = False 
+        self.invalid = [] 
         self.check1 = False
         self.check2 = False
         self.check3 = False 
@@ -33,13 +33,31 @@ class LungeResult:
 
         if (self.invalid): 
             self.feedback = []
-            self.feedback.append("Invalid Joint Detection")
+            str = "Invalid Joints Detected:"
+            if (0 in self.invalid):
+                str += " Shoulder,"
+            if (1 in self.invalid):
+                str += " Elbow,"
+            if (2 in self.invalid):
+                str += " Wrist,"
+            if (3 in self.invalid):
+                str += " Hip,"
+            if (4 in self.invalid):
+                str += " Knee,"
+            if (5 in self.invalid):
+                str += " Other Knee,"
+            if (6 in self.invalid):
+                str += " Ankle,"
+            if (7 in self.invalid):
+                str += " Other Ankle,"
+            str = str[:-1] + "!"
+            self.feedback.append(str)
 
     def getResult(self): 
         self.check1 = False 
         self.check2 = False
         self.check3 = False
-        self.invalid = False 
+        self.invalid = [] 
         return self.feedback
 
 
@@ -58,9 +76,8 @@ class LungePostureAnalysis:
 
         if ((x1 - x0) == 0):
             if (y1 != y0): 
-                return INT_MAX 
+                return float("inf") 
             else: 
-                self.invalid = True 
                 return 0 
 
         return (y1-y0)/(x1-x0)
@@ -100,26 +117,32 @@ class LungePostureAnalysis:
     # Line 5: Shoulder - Hip 
     def feedbackCalculation(self, bodyParts, default=True):
 
-        shoulder = bodyParts[0]
-        hip = bodyParts[3]
-        defaultKnee = bodyParts[4]
-        otherKnee = bodyParts[5]
-        defaultAnkle = bodyParts[6]
-        otherAnkle = bodyParts[7]
+        hip = (int(bodyParts[3][0]), int(bodyParts[3][1])) 
+        defaultKnee = (int(bodyParts[4][0]), int(bodyParts[4][1])) 
+        otherKnee = (int(bodyParts[5][0]), int(bodyParts[5][1])) 
+        defaultAnkle = (int(bodyParts[6][0]), int(bodyParts[6][1])) 
+        otherAnkle = (int(bodyParts[7][0]), int(bodyParts[7][1])) 
 
-        if ((int(shoulder[0]) == 0 and int(shoulder[1]) == 0) or 
-            (int(hip[0]) == 0 and int(hip[1]) == 0) or 
-            (int(defaultKnee[0]) == 0 and int(defaultKnee[1]) == 0) or 
-            (int(otherKnee[0]) == 0 and int(otherKnee[1]) == 0) or 
-            (int(defaultAnkle[0]) == 0 and int(defaultAnkle[1]) == 0) or 
-            (int(otherAnkle[0]) == 0 and int(otherAnkle[1]) == 0)):
-            self.invalid = True
+        if (hip[0] == 0 and hip[1] == 0):
+            self.lunge.invalid.append(3)
+            
+        if (defaultKnee[0] == 0 and defaultKnee[1] == 0):
+            self.lunge.invalid.append(4)
+        
+        if (otherKnee[0] == 0 and otherKnee[1] == 0):
+            self.lunge.invalid.append(5)
+
+        if (defaultAnkle[0] == 0 and defaultAnkle[1] == 0):
+            self.lunge.invalid.append(6) 
+        
+        if (otherAnkle[0] == 0 and otherAnkle[1] == 0):
+            self.lunge.invalid.append(7)
 
         if (default == False):
-            defaultKnee = bodyParts[5]
-            otherKnee = bodyParts[4]
-            defaultAnkle = bodyParts[7]
-            otherAnkle = bodyParts[6]
+            defaultKnee = (int(bodyParts[5][0]), int(bodyParts[5][1])) 
+            otherKnee = (int(bodyParts[4][0]), int(bodyParts[4][1])) 
+            defaultAnkle = (int(bodyParts[7][0]), int(bodyParts[7][1])) 
+            otherAnkle = (int(bodyParts[6][0]), int(bodyParts[6][1])) 
 
         line1Slope = self.getSlope(hip, defaultKnee)
         # line2Slope = self.getSlope(defaultKnee, defaultAnkle)
@@ -134,11 +157,10 @@ class LungePostureAnalysis:
         frontLegSlope = -0.75
         backLegSlope = 2
 
-        # # Front Leg too forward
+        # Front Leg too forward
         # print(defaultKnee[1])
         # print(defaultAnkle[1])
-        # print(self.samePos(defaultKnee[1], defaultAnkle[1], 2))
-        # print(defaultKnee[1] > defaultAnkle[1])
+        
 
         # # Go Lower
         # print(otherAnkle[0])
@@ -154,9 +176,8 @@ class LungePostureAnalysis:
         # print(self.greaterThan(line3Slope, backLegSlope))
         # print(self.sameAngle(angleOtherKnee, perpendicular))
 
-        if not (self.samePos(defaultKnee[1], defaultAnkle[1], 5)):
-            if (defaultKnee[1] > defaultAnkle[1]):
-                self.lunge.check1 = True
+        if not (self.lessThan(defaultKnee[1], defaultAnkle[1], 6)):
+            self.lunge.check1 = True
 
         if not (self.lessThan(otherAnkle[0], otherKnee[0], 1) and self.greaterThan(line1Slope, frontLegSlope, 0.1)):
             self.lunge.check2 = True
@@ -176,14 +197,14 @@ class LungePostureAnalysis:
 #############################################################
 
 
-forwardForward = [(0.0, 0.0), (29.5, 80.5), (15.5, 87.5), (49.5, 88.5), (65.0, 127.5), (96.5, 66.5), (84.5, 118.5), (92.0, 48.5)]  
-perfectForward = [(0.0, 0.0), (17.5, 72.5), (0.0, 0.0), (38.0, 85.0), (60.5, 122.5), (87.5, 61.0), (82.0, 118.0), (88.0, 42.0)]
-backwardForward = [(27.5, 95.5), (32.5, 92.5), (20.5, 108.0), (53.0, 99.0), (64.0, 138.5), (95.0, 67.0), (84.0, 126.5), (90.5, 48.0)]
+# forwardForward = [(0.0, 0.0), (29.5, 80.5), (15.5, 87.5), (49.5, 88.5), (65.0, 127.5), (96.5, 66.5), (84.5, 118.5), (92.0, 48.5)]  
+# perfectForward = [(0.0, 0.0), (17.5, 72.5), (0.0, 0.0), (38.0, 85.0), (60.5, 122.5), (87.5, 61.0), (82.0, 118.0), (88.0, 42.0)]
+# backwardForward = [(27.5, 95.5), (32.5, 92.5), (20.5, 108.0), (53.0, 99.0), (64.0, 138.5), (95.0, 67.0), (84.0, 126.5), (90.5, 48.0)]
 
 
-forwardBackward = [(0.0, 0.0), (31.5, 74.5), (21.5, 82.5), (53.5, 84.5), (94.0, 67.0), (70.5, 115.5), (91.0, 46.5), (88.5, 108.5)]
-perfectBackward = [(0.0, 0.0), (23.5, 67.5), (11.5, 81.0), (45.5, 78.0), (86.5, 60.0), (69.0, 110.5), (87.5, 38.0), (88.0, 105.5)]
-backwardBackward = [(0.0, 0.0), (0.0, 0.0), (25.5, 95.5), (58.0, 93.5), (95.0, 68.5), (70.5, 125.5), (91.5, 48.0), (86.5, 118.0)]
+# forwardBackward = [(0.0, 0.0), (31.5, 74.5), (21.5, 82.5), (53.5, 84.5), (94.0, 67.0), (70.5, 115.5), (91.0, 46.5), (88.5, 108.5)]
+# perfectBackward = [(0.0, 0.0), (23.5, 67.5), (11.5, 81.0), (45.5, 78.0), (86.5, 60.0), (69.0, 110.5), (87.5, 38.0), (88.0, 105.5)]
+# backwardBackward = [(0.0, 0.0), (0.0, 0.0), (25.5, 95.5), (58.0, 93.5), (95.0, 68.5), (70.5, 125.5), (91.5, 48.0), (86.5, 118.0)]
 
 
 

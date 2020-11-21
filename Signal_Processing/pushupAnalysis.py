@@ -22,7 +22,7 @@ class PushupResult:
         self.check2 = False
         self.check3 = False
         self.check4 = False
-        self.invalid = False 
+        self.invalid = [] 
     
 
     def processResult(self): 
@@ -38,14 +38,32 @@ class PushupResult:
 
         if (self.invalid): 
             self.feedback = []
-            self.feedback.append("Invalid Joint Detection")
+            str = "Invalid Joints Detected:"
+            if (0 in self.invalid):
+                str += " Shoulder,"
+            if (1 in self.invalid):
+                str += " Elbow,"
+            if (2 in self.invalid):
+                str += " Wrist,"
+            if (3 in self.invalid):
+                str += " Hip,"
+            if (4 in self.invalid):
+                str += " Knee,"
+            if (5 in self.invalid):
+                str += " Other Knee,"
+            if (6 in self.invalid):
+                str += " Ankle,"
+            if (7 in self.invalid):
+                str += " Other Ankle,"
+            str = str[:-1] + "!"
+            self.feedback.append(str)
 
     def getResult(self): 
         self.check1 = False 
         self.check2 = False
         self.check3 = False
         self.check4 = False 
-        self.invalid = False 
+        self.invalid = []
         return self.feedback
 
 
@@ -64,9 +82,8 @@ class PushupPostureAnalysis:
 
         if ((x1 - x0) == 0):
             if (y1 != y0): 
-                return INT_MAX 
+                return float("inf") 
             else: 
-                self.invalid = True 
                 return 0 
 
         return (y1-y0)/(x1-x0)
@@ -94,7 +111,7 @@ class PushupPostureAnalysis:
         return abs(pos0 - pos1) <= threshold
 
     def lessThan(self, pos0, pos1, threshold = 0): 
-        return (pos0 - threshold) <= pos1  
+        return (pos0 - threshold) < pos1  
     
     def greaterThan(self, pos0, pos1, threshold = 0): 
         return pos0 >= (pos1 - threshold)  
@@ -107,37 +124,48 @@ class PushupPostureAnalysis:
     # Line 5: Elbow - Wrist 
     def feedbackCalculation(self, bodyParts, default=True):
 
-        shoulder = bodyParts[0]
-        elbow = bodyParts[1]
-        wrist = bodyParts[2]
-        hip = bodyParts[3]
-        knee = bodyParts[4]
-        ankle = bodyParts[6]
+        shoulder = (int(bodyParts[0][0]), int(bodyParts[0][1])) 
+        elbow = (int(bodyParts[1][0]), int(bodyParts[1][1])) 
+        wrist = (int(bodyParts[2][0]), int(bodyParts[2][1])) 
+        hip = (int(bodyParts[3][0]), int(bodyParts[3][1])) 
+        knee = (int(bodyParts[4][0]), int(bodyParts[4][1]))
+        # ankle = (int(bodyParts[6][0]), int(bodyParts[6][1])) 
+        
+        if (shoulder[0] == 0 and shoulder[1] == 0):
+            self.pushup.invalid.append(0)  
 
-        if ((int(shoulder[0]) == 0 and int(shoulder[1]) == 0) or 
-            (int(elbow[0]) == 0 and int(elbow[1]) == 0) or 
-            (int(wrist[0]) == 0 and int(wrist[1]) == 0) or 
-            (int(hip[0]) == 0 and int(hip[1]) == 0) or 
-            (int(knee[0]) == 0 and int(knee[1]) == 0) or 
-            (int(ankle[0]) == 0 and int(ankle[1]) == 0)):
-            self.invalid = True
+        if (elbow[0] == 0 and elbow[1] == 0):
+            self.pushup.invalid.append(1)
+
+        if (wrist[0] == 0 and wrist[1] == 0):
+            self.pushup.invalid.append(2)
+
+        if (hip[0] == 0 and hip[1] == 0):
+            self.pushup.invalid.append(3)
+            
+        if (knee[0] == 0 and knee[1] == 0):
+            self.pushup.invalid.append(4)
+
+        # if (ankle[0] == 0 and ankle[1] == 0):
+        #     self.pushup.invalid.append(6) 
+    
 
         line1Slope = self.getSlope(shoulder, hip)
-        line2Slope = self.getSlope(hip, knee)
-        line3Slope = self.getSlope(knee, ankle)
-        line4Slope = self.getSlope(shoulder, elbow)
-        line5Slope = self.getSlope(elbow, wrist)
+        # line2Slope = self.getSlope(hip, ankle)
+        # line3Slope = self.getSlope(knee, ankle)
+        # line4Slope = self.getSlope(shoulder, elbow)
+        # line5Slope = self.getSlope(elbow, wrist)
         
-        angleHip = self.getAngle(shoulder, hip, knee)
-        angleKnee = self.getAngle(hip, knee, ankle)
+        # angleHip = self.getAngle(shoulder, hip, knee)
+        # angleKnee = self.getAngle(hip, knee, ankle)
 
         # # If the Hands are Too Forward
         # print(wrist[1])
         # print(elbow[1])
         # print(self.lessThan(wrist[1], shoulder[1]))
-        # print(self.lessThan(wrist[1], elbow[1], 1))
+        # print(self.lessThan(wrist[1], elbow[1], 2))
 
-        if not (self.lessThan(wrist[1], shoulder[1]) and self.lessThan(wrist[1], elbow[1], 1)):
+        if not (self.lessThan(wrist[1], shoulder[1]) and self.lessThan(wrist[1], elbow[1], 2)):
             self.pushup.check1 = True
         
         # # Go Lower
@@ -153,20 +181,16 @@ class PushupPostureAnalysis:
         # Get Better Pictures to Classify 
 
         # Check if the slope of shoulder to hip  
+        slopeOfShoulder = 0.2
 
-        # slopeOfShoulder = 0.2
-        # if not (self.greaterThan(line1Slope, slopeOfShoulder)):
-        #     self.pushup.check3 = True 
-
-        # print(line2Slope)
-        # print(line3Slope)
-        # print(self.greaterThan(line2Slope, line3Slope))
-
-        # if not (self.sameSlope(line2Slope, line3Slope)):
-        #     self.pushup.check3 = True
+        # print(line1Slope)
+        # print(slopeOfShoulder)
+        
+        if not (self.greaterThan(line1Slope, slopeOfShoulder)):
+            self.pushup.check3 = True 
 
 
-        if not (self.greaterThan(wrist[0], knee[0]) and self.greaterThan(wrist[0], ankle[0])):
+        if not (self.greaterThan(wrist[0], knee[0], -1)):
             self.pushup.check4 = True 
 
         self.pushup.processResult() 
