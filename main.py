@@ -1,7 +1,9 @@
-import sys, pygame, cv2, time, threading, queue, serial, random, UI.database, pprint, datetime, os, matplotlib
+import matplotlib
 matplotlib.use("Agg") # Need this before importing any other matplotlib modules
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_agg as agg
+
+import sys, pygame, cv2, time, threading, queue, serial, random, UI.database, pprint, datetime, os
 
 from PIL import Image
 from UI.structs import *
@@ -43,7 +45,7 @@ def sendPicture(d,workout):
 
     
     original_image = None
-    if(d.useRandomPics):
+    if(d.useRandomSavedPics):
         print("sent image: "+workoutPhotos[workout][randInt])
         original_image = Image.open(sample_image_dir+workoutPhotos[workout][randInt])
     else:
@@ -57,7 +59,7 @@ def sendPicture(d,workout):
     byte_arr = d.UART_WORKOUT_KEY[workout_key]+converted_image.tobytes()
 
     locationArray = []
-    if(not d.sendPicTest):
+    if(d.UART):
         d.ser.write(byte_arr)
         
         total = b''
@@ -92,9 +94,8 @@ def sendPicture(d,workout):
 
 def initConstants(d):
     #toggles
-    d.UART = True
-    d.sendPicTest = False
-    d.useRandomPics = False
+    d.UART = False
+    d.useRandomSavedPics = False
 
     #constants
     d.FRAME_FREQUENCY = 100
@@ -122,8 +123,8 @@ def initConstants(d):
 
 def initPyCamera(d):
     #setup pygame/camera
-    # d.camera  = cv2.VideoCapture(0)
-    d.camera = cv2.VideoCapture(1)
+    d.camera  = cv2.VideoCapture(0)
+    # d.camera = cv2.VideoCapture(1)
     if not d.camera.isOpened():
         print("Could not open video device")
     pygame.init()
@@ -203,7 +204,7 @@ def initWorkouts(d):
         "u": 7.55
     }
 
-    d.currentScreen = screenMode.WORKOUT
+    d.currentScreen = screenMode.HISTORYOPTIONS
     d.newScreen = True
 
     d.breakTime = d.SET_BREAK_TIME
@@ -226,7 +227,6 @@ def initDBProfile(d):
     profileData = d.db.getProfile(d.currProfile)
     d.age = profileData[2]
     d.weight = profileData[1]
-    print(d.weight,d.age,"user weight")
 
 def initAnalysis(d):
     if(d.UART):
@@ -432,9 +432,9 @@ def drawWorkout(d):
             imCurrentWorkout = currentWorkout
             if(currentWorkout=="l"):
                 imCurrentWorkout = "l_r" if (d.currentRep%2==1) else "l_l"
-            if(d.UART or d.sendPicTest):
-                serialThread = threading.Thread(target=sendPicture,name="FPGA_SERIAL",args=[d,imCurrentWorkout],daemon=True)
-                serialThread.start()
+
+            serialThread = threading.Thread(target=sendPicture,name="FPGA_SERIAL",args=[d,imCurrentWorkout],daemon=True)
+            serialThread.start()
 
         #incrementing rep and updating model
         if(d.breakTime < 0 or d.currWorkoutFrame==0):
