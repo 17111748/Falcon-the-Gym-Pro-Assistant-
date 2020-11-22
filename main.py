@@ -204,7 +204,7 @@ def initWorkouts(d):
         "u": 7.55
     }
 
-    d.currentScreen = screenMode.HISTORYTRENDS
+    d.currentScreen = screenMode.HISTORYOPTIONS
     d.newScreen = True
 
     d.breakTime = d.SET_BREAK_TIME
@@ -239,6 +239,10 @@ def initAnalysis(d):
     d.lungeAnalyzer = lungeAnalysis.LungePostureAnalysis()
     d.pushupAnalyzer = pushupAnalysis.PushupPostureAnalysis()
 
+def initHistory(d):
+    d.buttons = []
+    d.workout = None
+
 def init(d):
     initConstants(d)
     initPyCamera(d)
@@ -246,8 +250,7 @@ def init(d):
     initWorkouts(d)
     initDBProfile(d)
     initAnalysis(d)
-    d.buttons = []
-    d.workout = None
+    initHistory(d)
 
 def metToCal(d,workout):
     lbToKg = 0.45359
@@ -570,14 +573,14 @@ def drawHistoryOptions(d):
 
         x = int(d.WINDOW_WIDTH * 0.1)
         y = int(d.WINDOW_HEIGHT * 0.1)
-        w = int(d.WINDOW_WIDTH * 0.13)
+        w = int(d.WINDOW_HEIGHT * 0.13)
         h = int(d.WINDOW_HEIGHT * 0.13)
 
         back = Button(x, y, w, h, color.black, "", info = "back")
         back.draw(d)
         d.buttons.append(back)
 
-        backImg = pygame.image.load("back.png")
+        backImg = pygame.image.load(os.path.join("UI","images","icons","back_og.png"))
         scaledImg = pygame.transform.scale(backImg, (w, h))
         d.screen.blit(scaledImg, (x - w/2, y - h/2))
 
@@ -587,7 +590,7 @@ def drawHistoryOptions(d):
         trends.draw(d)
         d.buttons.append(trends)
 
-        trendsImg = pygame.image.load("trends.png")
+        trendsImg = pygame.image.load(os.path.join("UI","images","icons","trends_og.png"))
         scaledTrendsImg = pygame.transform.scale(trendsImg, (w, h))
         d.screen.blit(scaledTrendsImg, (x - w/2, y - h/2))
 
@@ -706,14 +709,14 @@ def drawHistorySummary(d):
 
         x = int(d.WINDOW_WIDTH * 0.1)
         y = int(d.WINDOW_HEIGHT * 0.1)
-        w = int(d.WINDOW_WIDTH * 0.13)
+        w = int(d.WINDOW_HEIGHT * 0.13)
         h = int(d.WINDOW_HEIGHT * 0.13)
 
         back = Button(x, y, w, h, color.black, "", info = "back")
         back.draw(d)
         d.buttons.append(back)
 
-        backImg = pygame.image.load("back.png")
+        backImg = pygame.image.load(os.path.join("UI","images","icons","back_og.png"))
         scaledImg = pygame.transform.scale(backImg, (w, h))
         d.screen.blit(scaledImg, (x - w/2, y - h/2))
 
@@ -723,7 +726,7 @@ def drawHistorySummary(d):
         trends.draw(d)
         d.buttons.append(trends)
 
-        trendsImg = pygame.image.load("trends.png")
+        trendsImg = pygame.image.load(os.path.join("UI","images","icons","trends_og.png"))
         scaledTrendsImg = pygame.transform.scale(trendsImg, (w, h))
         d.screen.blit(scaledTrendsImg, (x - w/2, y - h/2))
 
@@ -773,14 +776,14 @@ def drawHistoryTrends(d):
         
         x = int(d.WINDOW_WIDTH * 0.1)
         y = int(d.WINDOW_HEIGHT * 0.1)
-        w = int(d.WINDOW_WIDTH * 0.13)
+        w = int(d.WINDOW_HEIGHT * 0.13)
         h = int(d.WINDOW_HEIGHT * 0.13)
         
         back = Button(x, y, w, h, color.black, "", info = "back")
         back.draw(d)
         d.buttons.append(back)
         
-        backImg = pygame.image.load("back.png")
+        backImg = pygame.image.load(os.path.join("UI","images","icons","back_og.png"))
         scaledImg = pygame.transform.scale(backImg, (w, h))
         d.screen.blit(scaledImg, (x - w/2, y - h/2))
 
