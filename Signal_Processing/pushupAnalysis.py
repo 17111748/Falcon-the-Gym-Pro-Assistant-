@@ -79,14 +79,14 @@ class PushupPostureAnalysis:
         x1 = pos1[1]
         y0 = height - pos0[0]
         x0 = pos0[1]
-        print(x0)
-        print(x1)
-        print(y0)
-        print(y1)
+        # print(x0)
+        # print(x1)
+        # print(y0)
+        # print(y1)
 
-        print(y1 - y0)
-        print(x1 - x0)
-        print("Run once")
+        # print(y1 - y0)
+        # print(x1 - x0)
+        # print("Run once")
         if ((x1 - x0) == 0):
             if (y1 != y0): 
                 return float("inf") 
@@ -216,15 +216,15 @@ class PushupPostureAnalysis:
 # high = [(57.5, 127.0), (68.5, 125.5), (88.5, 126.5), (64.0, 100.5), (75.5, 45.0), (82.0, 46.0), (81.5, 21.5), (85.5, 27.0)]
 # buttHigh = [(76.0, 138.0), (74.5, 133.5), (92.5, 132.0), (80.0, 108.0), (79.0, 52.0), (75.5, 106.5), (83.0, 29.5), (0.0, 0.0)]
  
-test = [(90.5, 133.5), (83.0, 122.5), (89.0, 123.5), (93.5, 96.5), (95.0, 42.5), (0.0, 0.0), (95.0, 14.5), (90.5, 133.5)]
+# test = [(90.5, 133.5), (83.0, 122.5), (89.0, 123.5), (93.5, 96.5), (95.0, 42.5), (0.0, 0.0), (95.0, 14.5), (90.5, 133.5)]
 
-pushup = PushupPostureAnalysis()
+# pushup = PushupPostureAnalysis()
 
 
-pushup.feedbackCalculation(test)
-result = pushup.getResult()
-print("Perfect: " + str(result))
-print("\n")
+# pushup.feedbackCalculation(test)
+# result = pushup.getResult()
+# print("Perfect: " + str(result))
+# print("\n")
 
 # pushup.feedbackCalculation(handForward)
 # result = pushup.getResult()

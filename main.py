@@ -204,7 +204,7 @@ def initWorkouts(d):
         "u": 7.55
     }
 
-    d.currentScreen = screenMode.HISTORYOPTIONS
+    d.currentScreen = screenMode.HISTORYTRENDS
     d.newScreen = True
 
     d.breakTime = d.SET_BREAK_TIME
@@ -561,8 +561,8 @@ def drawHistoryOptions(d):
         d.buttons = []
 
         # Displaying the set of options
-        for i in range (len(data)):
-            workout = data[len(data)-i-1]
+        for i in range (5):
+            workout = data[5-i-1]
             optionStr = workout[2]
             option = Button(int(d.WINDOW_WIDTH * 0.5), int(d.WINDOW_HEIGHT * 0.35 + 100 * i), int(0.6 * d.WINDOW_WIDTH), 55, color.black, optionStr, info = workout)
             option.draw(d)
@@ -750,7 +750,7 @@ def drawHistoryTrends(d):
         data = d.db.getWorkouts(d.currProfile)
         sessions = []
         modifiedSessions = []
-        for i in range (len(data)):
+        for i in range (5):
             sessions.append(data[i][2])
             modifiedSessions.append(data[i][2].split()[0])
 

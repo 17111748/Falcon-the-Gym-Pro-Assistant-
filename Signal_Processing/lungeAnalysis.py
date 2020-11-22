@@ -211,16 +211,16 @@ class LungePostureAnalysis:
 # perfectBackward = [(0.0, 0.0), (23.5, 67.5), (11.5, 81.0), (45.5, 78.0), (86.5, 60.0), (69.0, 110.5), (87.5, 38.0), (88.0, 105.5)]
 # backwardBackward = [(0.0, 0.0), (0.0, 0.0), (25.5, 95.5), (58.0, 93.5), (95.0, 68.5), (70.5, 125.5), (91.5, 48.0), (86.5, 118.0)]
 
-test = [(12.0, 85.0), (2.5, 92.0), (97.5, 51.5), (54.5, 70.0), (66.5, 115.5), (104.5, 77.0), (95.5, 109.0), (97.5, 51.5)]
+# test = [(12.0, 85.0), (2.5, 92.0), (97.5, 51.5), (54.5, 70.0), (66.5, 115.5), (104.5, 77.0), (95.5, 109.0), (97.5, 51.5)]
 
 
 
-lunge = LungePostureAnalysis()
+# lunge = LungePostureAnalysis()
 
-lunge.feedbackCalculation(test)
-result = lunge.getResult()
-print("forwardForward: " + str(result))
-print("\n")
+# lunge.feedbackCalculation(test)
+# result = lunge.getResult()
+# print("forwardForward: " + str(result))
+# print("\n")
 
 # lunge.feedbackCalculation(perfectForward)
 # result = lunge.getResult()

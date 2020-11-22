@@ -1,7 +1,7 @@
 .DS_Store
 .vscode/
 .venv/
-*.pyc
 /Signal_Processing/__pycache__
 *.cpython-36.pyc
 *.pyc
+/.cache*
