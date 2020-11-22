@@ -1,8 +1,8 @@
 import numpy as np
 
-expectedHipAngle = 110 
+expectedHipAngle = 100 
 parallel = 180 
-
+perpendicular = 90
 
 # bodyParts[0] = Shoulder
 # bodyParts[1] = Elbow 
@@ -102,26 +102,35 @@ class LegRaisePostureAnalysis:
     def sameAngle(self, angle1, angle2, threshold = 0.1): 
         return abs(angle1 - angle2) < threshold 
     
+    def samePos(self, pos0, pos1, threshold = 0):
+        return abs(pos0 - pos1) <= threshold
+
+    def lessThan(self, pos0, pos1, threshold = 0): 
+        return (pos0 - threshold) <= pos1  
+    
+    def greaterThan(self, pos0, pos1, threshold = 0): 
+        return pos0 >= (pos1 - threshold)  
+    
     # Line 1: Shoulder - Hip 
     # Line 2: Hip - Knee 
     # Line 3: Knee - Ankle 
     def feedbackCalculation(self, bodyParts, default=True):
 
-        shoulder = bodyParts[0]
-        hip = bodyParts[3]
-        knee = bodyParts[4]
-        ankle = bodyParts[6]
+        shoulder = (int(bodyParts[0][0]), int(bodyParts[0][1])) 
+        hip = (int(bodyParts[3][0]), int(bodyParts[3][1])) 
+        knee = (int(bodyParts[4][0]), int(bodyParts[4][1])) 
+        ankle = (int(bodyParts[6][0]), int(bodyParts[6][1])) 
 
-        if (int(shoulder[0]) == 0 and int(shoulder[1]) == 0):
+        if (shoulder[0] == 0 and shoulder[1] == 0):
             self.legRaise.invalid.append(0)  
 
-        if (int(hip[0]) == 0 and int(hip[1]) == 0):
+        if (hip[0] == 0 and hip[1] == 0):
             self.legRaise.invalid.append(3)
             
-        if (int(knee[0]) == 0 and int(knee[1]) == 0):
+        if (knee[0] == 0 and knee[1] == 0):
             self.legRaise.invalid.append(4)
 
-        if (int(ankle[0]) == 0 and int(ankle[1]) == 0):
+        if (ankle[0] == 0 and ankle[1] == 0):
             self.legRaise.invalid.append(6) 
 
         # line1Slope = self.getSlope(shoulder, hip)
@@ -131,13 +140,16 @@ class LegRaisePostureAnalysis:
         angleHip = self.getAngle(shoulder, hip, knee)
         angleKnee = self.getAngle(hip, knee, ankle)
 
-        if not (self.sameAngle(angleHip, expectedHipAngle, 5)):
+        if not (self.sameAngle(angleHip, expectedHipAngle, 10)):
             if(angleHip > expectedHipAngle):
                 self.legRaise.check1 = True 
-            else: 
-                self.legRaise.check2 = True 
         
-        if not (self.sameAngle(angleKnee, parallel, 10)):
+        if not (self.lessThan(perpendicular, angleHip, 3)):
+            self.legRaise.check2 = True 
+
+        print(angleKnee)
+        print(parallel)
+        if not (self.sameAngle(angleKnee, parallel, 15)):
             self.legRaise.check3 = True 
 
         self.legRaise.processResult()

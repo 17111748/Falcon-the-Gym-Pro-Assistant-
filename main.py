@@ -26,39 +26,46 @@ def convertString(bodyParts):
     return result 
 
 def sendPicture(d,workout):
+    print("sending picture of:", workout)
     resized_col = 160
     resized_row = 120
 
     #temp random stuff
     sample_image_dir = os.path.join("Signal_Processing", "images", "Nov", "") 
     workoutPhotos = {
-        "l": [os.path.join("lungeForward", "Backward.png"), os.path.join("lungeForward", "Forward.png"), os.path.join("lungeForward", "Perfect.png")],
+        "l_r": [os.path.join("lungeForward", "Backward.png"), os.path.join("lungeForward", "Forward.png"), os.path.join("lungeForward", "Perfect.png")],
+        "l_l": [os.path.join("lungeForward", "Backward.png"), os.path.join("lungeForward", "Forward.png"), os.path.join("lungeForward", "Perfect.png")],
         "u": [os.path.join("pushUp", "HandForward.png"), os.path.join("pushUp", "High.png"), os.path.join("pushUp", "Perfect.png"), os.path.join("pushUp", "Perfect2.png")],
         "c": [os.path.join("legRaise", "kneeBent.png"), os.path.join("legRaise", "Over.png"), os.path.join("legRaise", "Perfect.png"), os.path.join("legRaise", "Under.png")]
     }
 
     randInt = random.randint(0,len(workoutPhotos[workout])-1)
-   
-    original_image = Image.open(sample_image_dir+workoutPhotos[workout][randInt])
+
+    
+    original_image = None
+    if(d.useRandomPics):
+        print("sent image: "+workoutPhotos[workout][randInt])
+        original_image = Image.open(sample_image_dir+workoutPhotos[workout][randInt])
+    else:
+        original_image = Image.open(d.CAPTURE_IMAGE)
     original_image_pixels = original_image.load()
 
     new_image = original_image.resize((resized_col, resized_row))
     converted_image = new_image.convert('HSV')
     # converted_pixel = converted_image.load()
-    byte_arr = converted_image.tobytes()
+    workout_key = "l" if (workout=="l_l" or workout=="l_r") else workout
+    byte_arr = d.UART_WORKOUT_KEY[workout_key]+converted_image.tobytes()
 
     locationArray = []
     if(not d.sendPicTest):
         d.ser.write(byte_arr)
-        print("sent image: "+workoutPhotos[workout][randInt])
         
         total = b''
         data_received = b''
         while ("\n" not in data_received.decode("utf-8")):
             data_received = d.ser.read(d.ser.in_waiting)
             total += data_received
-            # if(len(data_received) != 0):
-            #     print(data_received.decode("utf-8"))
+
         coord_string = total.decode("utf-8")
         locationArray = convertString(coord_string[:-2]) # getting rid of the \n 
         print(locationArray)
@@ -66,8 +73,11 @@ def sendPicture(d,workout):
         time.sleep(1.4)
         locationArray = [(71.5, 129.5), (72.5, 121.5), (92.5, 129.5), (81.0, 99.0), (80.0, 40.0), (0.0, 0.0), (84.5, 17.0), (80.5, 38.5)]    
     feedback = ""
-    if(workout=="l"):
-        d.lungeAnalyzer.feedbackCalculation(locationArray)
+    if(workout=="l_l"):
+        d.lungeAnalyzer.feedbackCalculation(locationArray,False)
+        feedback =  d.lungeAnalyzer.getResult()
+    elif(workout=="l_r"):
+        d.lungeAnalyzer.feedbackCalculation(locationArray,True)
         feedback =  d.lungeAnalyzer.getResult()
     elif(workout=="c"):
         d.legRaiseAnalyzer.feedbackCalculation(locationArray)
@@ -76,34 +86,44 @@ def sendPicture(d,workout):
         d.pushupAnalyzer.feedbackCalculation(locationArray)
         feedback = d.pushupAnalyzer.getResult()
     if(len(feedback)==0):
-        d.workoutPerfectCount[workout]+=1
-    d.workoutPerfectCount[workout+"_total"]+=1
+        d.workoutPerfectCount[workout_key]+=1
+    d.workoutPerfectCount[workout_key+"_total"]+=1
     d.threadQueue.put(feedback)
 
 def initConstants(d):
     #toggles
-    d.UART = False
-    d.sendPicTest = True
+    d.UART = True
+    d.sendPicTest = False
+    d.useRandomPics = False
 
     #constants
     d.FRAME_FREQUENCY = 100
     d.WINDOW_WIDTH = 1280
     d.WINDOW_HEIGHT = int(d.WINDOW_WIDTH/1.6)
     d.LIVE_VIDEO_DIMS = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.5))
+    d.CAPTURE_IMAGE = os.path.join("captured.png")
     d.IMAGE_DIR = {
        "c": os.path.join("UI", "images", "leg_raise", ""),
-       "l": os.path.join("UI", "images", "lunge", ""),
+       "l_r": os.path.join("UI", "images", "lunge_right", ""),
+       "l_l": os.path.join("UI", "images", "lunge_left", ""),
        "u": os.path.join("UI", "images", "push_up", "")
     }
-    d.REPS_PER_SET = 3
-    d.SETS_PER_WORKOUT = 3
-    d.SET_BREAK_TIME = 5
+    d.REPS_PER_SET = 8
+    d.SETS_PER_WORKOUT = 4
+    d.SET_BREAK_TIME = 20
     d.RESUME_TIME = 3
+    #about 2s at 0.04s per rep
+    d.END_SET_FRAME_COUNT = 50
+    d.UART_WORKOUT_KEY = {
+        "l": b'\x00',
+        "u": b'\x01',
+        "c": b'\x02' 
+    }
 
 def initPyCamera(d):
     #setup pygame/camera
-    d.camera  = cv2.VideoCapture(0)
-    # d.camera = cv2.VideoCapture(1)
+    # d.camera  = cv2.VideoCapture(0)
+    d.camera = cv2.VideoCapture(1)
     if not d.camera.isOpened():
         print("Could not open video device")
     pygame.init()
@@ -124,11 +144,6 @@ def initFrames(d):
         "l": 88,
         "u": 55
     }
-    
-    d.endFeedbackFrame = {
-        "c": 16,
-        
-    }
 
     #based on rolling AVG of d.clock.tick() of 40ms
     d.timePerFrame = 0.04
@@ -140,7 +155,7 @@ def initFrames(d):
     }
 
 def initNewWorkout(d):
-    d.currSet = 2
+    d.currSet = 1
     d.calBurned = 0 
     d.currWorkoutFrame = 0
     d.currentRep = 1
@@ -169,8 +184,9 @@ def initWorkouts(d):
     }
     d.workoutNames = {
         "c": "Leg Raise",
-        "l": "Lunges",
-        "u": "Push-Ups"
+        "l_r": "Lunge (Right Forward)   ",
+        "l_l": "Lunge (Left Forward)   ",
+        "u": "Push-Up"
     }
     d.workoutFocus = "core"
 
@@ -196,7 +212,10 @@ def initWorkouts(d):
     d.justResumed = False
     d.pause = False
 
+    d.displayFeedback = ""
+
     d.workoutStopwatch = stopwatch()
+    d.feedbackStopwatch = stopwatch()
     initNewWorkout(d)
 
 def initDBProfile(d):
@@ -205,8 +224,9 @@ def initDBProfile(d):
     #imperial (inches, pounds)
     d.currProfile = d.db.getLastProfile()
     profileData = d.db.getProfile(d.currProfile)
-    d.age = profileData[1]
-    d.weight = profileData[2]
+    d.age = profileData[2]
+    d.weight = profileData[1]
+    print(d.weight,d.age,"user weight")
 
 def initAnalysis(d):
     if(d.UART):
@@ -248,7 +268,10 @@ def updateRepText(d):
     repText.draw(d)
 
 def updateWorkoutText(d,currentWorkout):
-    workStr = d.workoutNames[currentWorkout]
+    actualWorkout = currentWorkout 
+    if(currentWorkout=="l"):
+        actualWorkout = "l_r" if (d.currentRep%2==1) else "l_l"
+    workStr = d.workoutNames[actualWorkout]
     textLoc = (int(d.WINDOW_WIDTH*0.025), int(d.WINDOW_HEIGHT*0.025))
     workText = Text(workStr,textLoc,50,color.black,topmode=True)
     workText.draw(d)
@@ -267,6 +290,7 @@ def updateTimeText(d,newSet,timeTextResumePause):
                 totalTime-=d.SET_BREAK_TIME
             for i in range(d.currSet-1,d.SETS_PER_WORKOUT):
                 totalTime+= d.workoutRepTime[d.workoutSets[d.workoutFocus][i]]*d.REPS_PER_SET
+                totalTime+=d.END_SET_FRAME_COUNT*d.timePerFrame
             d.timeRemaining = totalTime
         else:
             d.timeRemaining-=1
@@ -286,8 +310,14 @@ def updateBreakString(d):
     breakStr = "Next set in "+str(d.breakTime)+" seconds     "
     if(d.breakTime==1):
         breakStr = "Next set in "+str(d.breakTime)+" second        "
-    textLoc = (int(d.WINDOW_WIDTH*0.52), int(d.WINDOW_HEIGHT*0.02))
-    breakText = Text(breakStr,textLoc,60,color.red,topmode=True)
+    textLoc = (int(d.WINDOW_WIDTH*0.45), int(d.WINDOW_HEIGHT*0.02))
+    breakText = Text(breakStr,textLoc,60,color.blue,topmode=True)
+    breakText.draw(d)
+
+def updateFeedbackString(d):
+    fString = d.displayFeedback
+    textLoc = (int(d.WINDOW_WIDTH*0.45), int(d.WINDOW_HEIGHT*0.11))
+    breakText = Text(fString,textLoc,45,color.red,topmode=True)
     breakText.draw(d)
 
 def updateResumeTimeText(d):
@@ -296,8 +326,8 @@ def updateResumeTimeText(d):
         resumeStr = "Resuming in "+str(d.resumeFromPause)+" second        "
     elif(d.resumeFromPause<0):
         resumeStr = (len(resumeStr)*2)*" "
-    textLoc = (int(d.WINDOW_WIDTH*0.52), int(d.WINDOW_HEIGHT*0.02))
-    resumeText = Text(resumeStr,textLoc,60,color.red,topmode=True)
+    textLoc = (int(d.WINDOW_WIDTH*0.45), int(d.WINDOW_HEIGHT*0.02))
+    resumeText = Text(resumeStr,textLoc,60,color.blue,topmode=True)
     resumeText.draw(d)
 
 def updateCalText(d,workout,reset):
@@ -326,6 +356,12 @@ def updateHRText(d,workout):
 
 def drawWorkout(d):
     if(not d.pause):
+        if(d.feedbackStopwatch.getTime()>2):
+            d.feedbackStopwatch.reset()
+            d.displayFeedback=(len(d.displayFeedback)*3)*" "
+        updateFeedbackString(d)
+
+
         if(d.newWorkout):
             initNewWorkout(d)
             d.newWorkout = False
@@ -333,8 +369,13 @@ def drawWorkout(d):
             d.beginWorkoutTime = datetime.datetime.now()
         # test threading
         if(not data.threadQueue.empty()):
-            print(data.threadQueue.get())
-
+            feedback = data.threadQueue.get()
+            if(len(feedback)>0):
+                d.displayFeedback = feedback[0]
+            else:
+                d.displayFeedback = "Perfect Rep!"
+            d.feedbackStopwatch.reset()
+            d.feedbackStopwatch.start()
         currentWorkout = d.workoutSets[d.workoutFocus][d.currSet-1]
         timeTextResumePause = True
         if(d.newScreen):
@@ -362,8 +403,8 @@ def drawWorkout(d):
                 updateBreakString(d)
 
             #draw divider line
-            start_line_loc = (int(d.WINDOW_WIDTH*0.45),int(d.WINDOW_HEIGHT*0.225))
-            end_line_loc = (int(d.WINDOW_WIDTH*0.45),int(d.WINDOW_HEIGHT*0.85))
+            start_line_loc = (int(d.WINDOW_WIDTH*0.45),int(d.WINDOW_HEIGHT*0.28))
+            end_line_loc = (int(d.WINDOW_WIDTH*0.45),int(d.WINDOW_HEIGHT*0.92))
             pygame.draw.line(d.screen, color.black, start_line_loc, end_line_loc, 3)
 
             d.beginTime = pygame.time.get_ticks()
@@ -376,7 +417,7 @@ def drawWorkout(d):
         frame = cv2.resize(frame, d.LIVE_VIDEO_DIMS, interpolation = cv2.INTER_AREA)
         frame = frame.swapaxes(0,1)
         frame = cv2.flip(frame,0)
-        live_loc = (int(d.WINDOW_WIDTH*0.48),int(d.WINDOW_HEIGHT*0.275))
+        live_loc = (int(d.WINDOW_WIDTH*0.48),int(d.WINDOW_HEIGHT*0.35))
         d.screen.blit(d.live_video, live_loc)
         pygame.surfarray.blit_array(d.live_video, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
@@ -384,13 +425,15 @@ def drawWorkout(d):
         if(d.currWorkoutFrame == d.captureFrame[currentWorkout] and d.breakTime<0 and d.resumeFromPause<0):
             #TODO
             toDownsize = frame.swapaxes(0,1)
-            # print('photo captured')
-            # Depending on exercise add a d.ser.write before you write the byte_arr.
-            # Write \x00 for lunges, \x01 for push ups, x\02 for leg raise
-            # d.ser.write(b'\x01')
-            # d.ser.write(byte_arr)
+            flippedFrame = cv2.flip(toDownsize,1)
+
+            cv2.imwrite(d.CAPTURE_IMAGE,flippedFrame)
+            print('photo captured')
+            imCurrentWorkout = currentWorkout
+            if(currentWorkout=="l"):
+                imCurrentWorkout = "l_r" if (d.currentRep%2==1) else "l_l"
             if(d.UART or d.sendPicTest):
-                serialThread = threading.Thread(target=sendPicture,name="FPGA_SERIAL",args=[d,currentWorkout],daemon=True)
+                serialThread = threading.Thread(target=sendPicture,name="FPGA_SERIAL",args=[d,imCurrentWorkout],daemon=True)
                 serialThread.start()
 
         #incrementing rep and updating model
@@ -403,8 +446,9 @@ def drawWorkout(d):
                 if(d.justResumed and d.currWorkoutFrame>0):
                     d.currWorkoutFrame-=1
                 d.justResumed = False
-                #incrementing rep if needed
-                if(d.currWorkoutFrame>=d.workoutTotalFrames[currentWorkout]):
+                #incrementing rep if needed, if last rep of set use extra frames
+                if((d.currWorkoutFrame>=d.workoutTotalFrames[currentWorkout] and d.currentRep<d.REPS_PER_SET)
+                    or d.currWorkoutFrame>=d.workoutTotalFrames[currentWorkout]+d.END_SET_FRAME_COUNT):
                     d.currentRep+=1   
                     d.currWorkoutFrame=0
                     #next set
@@ -426,12 +470,16 @@ def drawWorkout(d):
                         d.newScreen=True
                         return True
                     updateRepText(d)
+                    updateWorkoutText(d,currentWorkout)
 
                 #update model image
-                modelLocation = (int(d.WINDOW_WIDTH*0.02), int(d.WINDOW_HEIGHT*0.31))
-                d.screen.blit(pygame.image.load(d.IMAGE_DIR[currentWorkout]+"{:03n}".format(d.currWorkoutFrame)+'.gif'),modelLocation)
-                d.currWorkoutFrame+=1
+                modelLocation = (int(d.WINDOW_WIDTH*0.02), int(d.WINDOW_HEIGHT*0.35))
+                imCurrentWorkout = currentWorkout
+                if(currentWorkout=="l"):
+                    imCurrentWorkout = "l_r" if (d.currentRep%2==1) else "l_l"
 
+                d.screen.blit(pygame.image.load(d.IMAGE_DIR[imCurrentWorkout]+"{:03n}".format(d.currWorkoutFrame)+'.gif'),modelLocation)
+                d.currWorkoutFrame+=1
         #timer based (time left, next set break, resume, calories burned)
         currTime = pygame.time.get_ticks()
         if(currTime-d.beginTime>1000):
@@ -800,15 +848,17 @@ def pygameHandleEvent(d):
             sys.exit(0)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                print(d.workoutStopwatch.getTime())
                 if(d.currentScreen == screenMode.WORKOUT):
                     if(d.pause):
+                        d.feedbackStopwatch.start()
                         d.newScreen = True
                         if(d.breakTime<0):
                             d.resumeFromPause = d.RESUME_TIME
                             d.justResumed = True
                         d.pause = False
                     else:
+                        d.feedbackStopwatch.stop()
+                        d.workoutStopwatch.stop()
                         drawPause(d)
                         d.pause = True
                         d.workoutStopwatch.stop()
