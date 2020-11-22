@@ -11,7 +11,9 @@ class screenMode(enum.Enum):
     WORKOUT = 2
     PAUSE = 3
     SUMMARY = 4
-    HISTORY = 5
+    HISTORYSUMMARY = 5
+    HISTORYOPTIONS = 6
+    HISTORYTRENDS = 7
 
 class Text(object):
     def __init__(self,text,location, size = 60,col = color.white,topmode = False,transparent=False):
@@ -31,7 +33,7 @@ class Text(object):
 
 class Button(object):
     #initializes button
-    def __init__(self, x, y, w,h, col, text, textSize = 4,textbox = False):
+    def __init__(self, x, y, w, h, col, text, textSize = 4, textbox = False, info = None):
         self.x = x-w/2
         self.y = y-h/2
         self.textbox = textbox
@@ -39,7 +41,8 @@ class Button(object):
         #set location of the rectangle which will be updated if needed
         self.rect = (self.x,self.y,w,h)
         self.color = col
-        self.text = Text(text,(x,y),w/textSize)
+        self.text = Text(text,(x,y), min(h * 0.75, w * 0.3), color.black)
+        self.info = info
 
     def handle_mouse(self):
         #wait so that code doesnt mess up
@@ -64,7 +67,7 @@ class Button(object):
             pygame.draw.rect(d.screen, self.color, self.rect, 4)
             self.text.draw(d)
         elif(self.highlight==False):
-            pygame.draw.rect(d.screen, self.color,self.rect,2)
+            pygame.draw.rect(d.screen, self.color,self.rect, 2, border_radius=10)
             self.text.draw(d)
         else:
             pygame.draw.rect(d.screen,color.lightRed,self.rect)
