@@ -22,13 +22,15 @@ def convertString(bodyParts):
     return result 
 
 def sendPicture(d,workout):
+    print("sending picture of:", workout)
     resized_col = 160
     resized_row = 120
 
     #temp random stuff
     sample_image_dir = os.path.join("Signal_Processing", "images", "Nov", "") 
     workoutPhotos = {
-        "l": [os.path.join("lungeForward", "Backward.png"), os.path.join("lungeForward", "Forward.png"), os.path.join("lungeForward", "Perfect.png")],
+        "l_r": [os.path.join("lungeForward", "Backward.png"), os.path.join("lungeForward", "Forward.png"), os.path.join("lungeForward", "Perfect.png")],
+        "l_l": [os.path.join("lungeForward", "Backward.png"), os.path.join("lungeForward", "Forward.png"), os.path.join("lungeForward", "Perfect.png")],
         "u": [os.path.join("pushUp", "HandForward.png"), os.path.join("pushUp", "High.png"), os.path.join("pushUp", "Perfect.png"), os.path.join("pushUp", "Perfect2.png")],
         "c": [os.path.join("legRaise", "kneeBent.png"), os.path.join("legRaise", "Over.png"), os.path.join("legRaise", "Perfect.png"), os.path.join("legRaise", "Under.png")]
     }
@@ -38,6 +40,7 @@ def sendPicture(d,workout):
     
     original_image = None
     if(d.useRandomPics):
+        print("sent image: "+workoutPhotos[workout][randInt])
         original_image = Image.open(sample_image_dir+workoutPhotos[workout][randInt])
     else:
         original_image = Image.open(d.CAPTURE_IMAGE)
@@ -46,12 +49,12 @@ def sendPicture(d,workout):
     new_image = original_image.resize((resized_col, resized_row))
     converted_image = new_image.convert('HSV')
     # converted_pixel = converted_image.load()
-    byte_arr = d.UART_WORKOUT_KEY[workout]+converted_image.tobytes()
+    workout_key = "l" if (workout=="l_l" or workout=="l_r") else workout
+    byte_arr = d.UART_WORKOUT_KEY[workout_key]+converted_image.tobytes()
 
     locationArray = []
     if(not d.sendPicTest):
         d.ser.write(byte_arr)
-        print("sent image: "+workoutPhotos[workout][randInt])
         
         total = b''
         data_received = b''
@@ -66,8 +69,11 @@ def sendPicture(d,workout):
         time.sleep(1.4)
         locationArray = [(71.5, 129.5), (72.5, 121.5), (92.5, 129.5), (81.0, 99.0), (80.0, 40.0), (0.0, 0.0), (84.5, 17.0), (80.5, 38.5)]    
     feedback = ""
-    if(workout=="l"):
-        d.lungeAnalyzer.feedbackCalculation(locationArray)
+    if(workout=="l_l"):
+        d.lungeAnalyzer.feedbackCalculation(locationArray,False)
+        feedback =  d.lungeAnalyzer.getResult()
+    elif(workout=="l_r"):
+        d.lungeAnalyzer.feedbackCalculation(locationArray,True)
         feedback =  d.lungeAnalyzer.getResult()
     elif(workout=="c"):
         d.legRaiseAnalyzer.feedbackCalculation(locationArray)
@@ -76,8 +82,8 @@ def sendPicture(d,workout):
         d.pushupAnalyzer.feedbackCalculation(locationArray)
         feedback = d.pushupAnalyzer.getResult()
     if(len(feedback)==0):
-        d.workoutPerfectCount[workout]+=1
-    d.workoutPerfectCount[workout+"_total"]+=1
+        d.workoutPerfectCount[workout_key]+=1
+    d.workoutPerfectCount[workout_key+"_total"]+=1
     d.threadQueue.put(feedback)
 
 def initConstants(d):
@@ -98,9 +104,9 @@ def initConstants(d):
        "l_l": os.path.join("UI", "images", "lunge_left", ""),
        "u": os.path.join("UI", "images", "push_up", "")
     }
-    d.REPS_PER_SET = 100
-    d.SETS_PER_WORKOUT = 3
-    d.SET_BREAK_TIME = 5
+    d.REPS_PER_SET = 8
+    d.SETS_PER_WORKOUT = 4
+    d.SET_BREAK_TIME = 20
     d.RESUME_TIME = 3
     #about 2s at 0.04s per rep
     d.END_SET_FRAME_COUNT = 50
@@ -145,7 +151,7 @@ def initFrames(d):
     }
 
 def initNewWorkout(d):
-    d.currSet = 3
+    d.currSet = 1
     d.calBurned = 0 
     d.currWorkoutFrame = 0
     d.currentRep = 1
@@ -413,11 +419,15 @@ def drawWorkout(d):
         if(d.currWorkoutFrame == d.captureFrame[currentWorkout] and d.breakTime<0 and d.resumeFromPause<0):
             #TODO
             toDownsize = frame.swapaxes(0,1)
-            cv2.imwrite(d.CAPTURE_IMAGE,toDownsize)
-            print('photo captured')
+            flippedFrame = cv2.flip(toDownsize,1)
 
+            cv2.imwrite(d.CAPTURE_IMAGE,flippedFrame)
+            print('photo captured')
+            imCurrentWorkout = currentWorkout
+            if(currentWorkout=="l"):
+                imCurrentWorkout = "l_r" if (d.currentRep%2==1) else "l_l"
             if(d.UART or d.sendPicTest):
-                serialThread = threading.Thread(target=sendPicture,name="FPGA_SERIAL",args=[d,currentWorkout],daemon=True)
+                serialThread = threading.Thread(target=sendPicture,name="FPGA_SERIAL",args=[d,imCurrentWorkout],daemon=True)
                 serialThread.start()
 
         #incrementing rep and updating model

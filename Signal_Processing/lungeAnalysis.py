@@ -24,12 +24,12 @@ class LungeResult:
 
     def processResult(self): 
         self.feedback = [] 
-        if (self.check1): 
-            self.feedback.append("Front Knee too Forward")
         if (self.check2): 
             self.feedback.append("Go Lower")
         if (self.check3):
             self.feedback.append("Back Legs too far Back")
+        if (self.check1): 
+            self.feedback.append("Front Knee too Forward")
 
         if (self.invalid): 
             self.feedback = []
@@ -176,16 +176,21 @@ class LungePostureAnalysis:
         # print(self.greaterThan(line3Slope, backLegSlope))
         # print(self.sameAngle(angleOtherKnee, perpendicular))
 
-        if not (self.lessThan(defaultKnee[1], defaultAnkle[1], 6)):
+        if not (self.lessThan(defaultKnee[1], defaultAnkle[1], 10)):
             self.lunge.check1 = True
 
+       
         if not (self.lessThan(otherAnkle[0], otherKnee[0], 1) and self.greaterThan(line1Slope, frontLegSlope, 0.1)):
             self.lunge.check2 = True
 
-        if not (self.greaterThan(line3Slope, backLegSlope)):
+        # print(line3Slope)
+        # print(backLegSlope)
+        # if not (self.lessThan(line3Slope, backLegSlope)):
+        #     self.lunge.check3 = True 
+        
+        if not (self.greaterThan(otherKnee[1], hip[1], 7)):
             self.lunge.check3 = True 
 
-        
         self.lunge.processResult() 
 
 
@@ -206,15 +211,16 @@ class LungePostureAnalysis:
 # perfectBackward = [(0.0, 0.0), (23.5, 67.5), (11.5, 81.0), (45.5, 78.0), (86.5, 60.0), (69.0, 110.5), (87.5, 38.0), (88.0, 105.5)]
 # backwardBackward = [(0.0, 0.0), (0.0, 0.0), (25.5, 95.5), (58.0, 93.5), (95.0, 68.5), (70.5, 125.5), (91.5, 48.0), (86.5, 118.0)]
 
+test = [(12.0, 85.0), (2.5, 92.0), (97.5, 51.5), (54.5, 70.0), (66.5, 115.5), (104.5, 77.0), (95.5, 109.0), (97.5, 51.5)]
 
 
 
-# lunge = LungePostureAnalysis()
+lunge = LungePostureAnalysis()
 
-# lunge.feedbackCalculation(forwardForward)
-# result = lunge.getResult()
-# print("forwardForward: " + str(result))
-# print("\n")
+lunge.feedbackCalculation(test)
+result = lunge.getResult()
+print("forwardForward: " + str(result))
+print("\n")
 
 # lunge.feedbackCalculation(perfectForward)
 # result = lunge.getResult()
