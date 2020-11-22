@@ -12,5 +12,4 @@ sp = spotipy.Spotify(auth=token)
 
 device_id = sp.devices()['devices'][0]['id']
 
-sp.start_playback(device_id)
-
+sp.pause_playback(device_id)
