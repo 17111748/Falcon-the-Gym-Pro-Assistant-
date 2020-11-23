@@ -4,6 +4,7 @@ import sqlite3, datetime
 class database(object):
     defaultWeight = 170
     defaultAge = 20
+    
     def __init__(self,path):
         self.db = sqlite3.connect(path)
         self.cursor = self.db.cursor()
@@ -19,6 +20,12 @@ class database(object):
                                                                 calories real,
                                                                 avgHR integer,
                                                                 profile integer,
+                                                                perfPush integer,
+                                                                totalPush integer,
+                                                                perfRaise integer,
+                                                                totalRaise integer,
+                                                                perfLunge integer,
+                                                                totalLunge integer,
                                                                 FOREIGN KEY (profile) REFERENCES profiles(profile_id));"""
         self.cursor.execute(applicationData)
         self.cursor.execute(createProfile)
@@ -46,10 +53,14 @@ class database(object):
         sql = 'SELECT * from workouts WHERE profile=?;'
         res = self.cursor.execute(sql,(profile,)).fetchall()
         return res
-    def addWorkout(self,focus,duration,timeStarted,timeEnded,calories,avgHR,profile):
+    def addWorkout(self,focus,duration,timeStarted,timeEnded,calories,avgHR,profile,perfectWorkout):
+        feedback = (perfectWorkout["u"],perfectWorkout["u_total"],
+                    perfectWorkout["c"],perfectWorkout["c_total"],
+                    perfectWorkout["l"],perfectWorkout["l_total"])
         self.getProfile(profile)
-        sql = """INSERT INTO workouts VALUES (?,?,?,?,?,?,?)"""
-        self.cursor.execute(sql,(focus,duration,timeStarted,timeEnded,calories,avgHR,profile))
+        sql = """INSERT INTO workouts VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+        allParams = (focus,duration,timeStarted,timeEnded,calories,avgHR,profile)+feedback
+        self.cursor.execute(sql,allParams)
         self.db.commit()
     def getLastProfile(self):
         res = self.cursor.execute('SELECT * from application WHERE rowid=1;').fetchall()

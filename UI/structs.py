@@ -33,15 +33,16 @@ class Text(object):
 
 class Button(object):
     #initializes button
-    def __init__(self, x, y, w, h, col, text, textSize = 4, textbox = False, info = None):
+    def __init__(self, x, y, w, h, col, text, textSize = 32, info = None):
         self.x = x-w/2
         self.y = y-h/2
-        self.textbox = textbox
         self.highlight = False
         #set location of the rectangle which will be updated if needed
         self.rect = (self.x,self.y,w,h)
         self.color = col
-        self.text = Text(text,(x,y), min(h * 0.75, w * 0.3), color.black)
+        self.textSize = textSize
+        self.text = text
+        self.textLoc = (x,y)
         self.info = info
 
     def handle_mouse(self):
@@ -62,14 +63,12 @@ class Button(object):
         return False
 
     def draw(self,d):
-        if(self.textbox):
-            pygame.draw.rect(d.screen, color.white, self.rect)
-            pygame.draw.rect(d.screen, self.color, self.rect, 4)
-            self.text.draw(d)
-        elif(self.highlight==False):
+        tempText = None
+        if(self.highlight==False):
             pygame.draw.rect(d.screen, self.color,self.rect, 2, border_radius=10)
-            self.text.draw(d)
+            tempText = Text(self.text,self.textLoc,self.textSize, color.black)
         else:
-            pygame.draw.rect(d.screen,color.lightRed,self.rect)
-            pygame.draw.rect(d.screen, self.color, self.rect,4)
-            self.text.draw(d)
+            pygame.draw.rect(d.screen, self.color, self.rect,width=4,border_radius=10)
+            tempText = Text(self.text,self.textLoc,self.textSize+2, color.black)
+
+        tempText.draw(d)

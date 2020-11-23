@@ -109,9 +109,9 @@ def initConstants(d):
        "l_l": os.path.join("UI", "images", "lunge_left", ""),
        "u": os.path.join("UI", "images", "push_up", "")
     }
-    d.REPS_PER_SET = 8
+    d.REPS_PER_SET = 1
     d.SETS_PER_WORKOUT = 4
-    d.SET_BREAK_TIME = 20
+    d.SET_BREAK_TIME = 1
     d.RESUME_TIME = 3
     #about 2s at 0.04s per rep
     d.END_SET_FRAME_COUNT = 50
@@ -156,8 +156,9 @@ def initFrames(d):
     }
 
 def initNewWorkout(d):
-    d.currSet = 1
+    d.currSet = 4
     d.calBurned = 0 
+    d.avgHR = 0
     d.currWorkoutFrame = 0
     d.currentRep = 1
     d.timeRemaining = -1
@@ -189,7 +190,7 @@ def initWorkouts(d):
         "l_l": "Lunge (Left Forward)   ",
         "u": "Push-Up"
     }
-    d.workoutFocus = "core"
+    d.workoutFocus = "leg"
 
     d.workoutHRR = {
         "rest": 0.1,
@@ -204,7 +205,7 @@ def initWorkouts(d):
         "u": 7.55
     }
 
-    d.currentScreen = screenMode.HISTORYOPTIONS
+    d.currentScreen = screenMode.SUMMARY
     d.newScreen = True
 
     d.breakTime = d.SET_BREAK_TIME
@@ -243,6 +244,11 @@ def initHistory(d):
     d.buttons = []
     d.workout = None
 
+def initSummary(d):
+    x,y = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.75))
+    w,h =  (int(d.WINDOW_WIDTH*.2),int(d.WINDOW_HEIGHT*0.1))
+    d.mainButton = Button(x,y,w,h,color.black,"Main Menu",textSize=32)
+
 def init(d):
     initConstants(d)
     initPyCamera(d)
@@ -251,18 +257,12 @@ def init(d):
     initDBProfile(d)
     initAnalysis(d)
     initHistory(d)
+    initSummary(d)
 
 def metToCal(d,workout):
     lbToKg = 0.45359
     #calories per second burned
     return d.workoutMET[workout]*0.0175*(lbToKg*d.weight)/60
-
-def drawMain(d):
-    if(d.newScreen):
-        #draw start and settings
-        #draw 
-        d.screen.fill(color.white)
-        d.newScreen = False
 
 def updateRepText(d):
     repStr = "Rep: "+str(d.currentRep)+"/"+str(d.REPS_PER_SET)
@@ -466,7 +466,7 @@ def drawWorkout(d):
                             avgHRLow = d.HRTotalLow/d.workoutStopwatch.getTime()
                             avgHRHigh = d.HRTotalHigh/d.workoutStopwatch.getTime()
                             d.avgHR = (avgHRHigh+avgHRLow)/2
-                            d.db.addWorkout(d.workoutFocus,d.workoutStopwatch.getTime(),d.beginWorkoutTime,timeEnd,d.calBurned,d.avgHR,d.currProfile)
+                            d.db.addWorkout(d.workoutFocus,d.workoutStopwatch.getTime(),d.beginWorkoutTime,timeEnd,d.calBurned,d.avgHR,d.currProfile,d.workoutPerfectCount)
                             #return true so that main function proceeds to draw summary
                             return True
                         d.breakTime = d.SET_BREAK_TIME
@@ -517,34 +517,54 @@ def drawWorkout(d):
             d.beginTime = currTime
         
 def drawSummary(d):
-    if(d.newScreen):
-        d.screen.fill(color.white)
+    d.screen.fill(color.white)
 
-        titleStr = "Workout Summary"
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.1))
-        titleText = Text(titleStr,textLoc,60,color.black,topmode=False)
-        titleText.draw(d)
+    titleStr = "Workout Summary"
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.1))
+    titleText = Text(titleStr,textLoc,60,color.black,topmode=False)
+    titleText.draw(d)
 
-        caloriesStr = "Active Calories: "+'{0:.1f}'.format(d.calBurned)
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.18))
-        caloriesText = Text(caloriesStr,textLoc,30,color.black,topmode=False)
-        caloriesText.draw(d)
+    time = d.workoutStopwatch.getTime()
+    m, s = divmod(int(time), 60)
+    h, m = divmod(m, 60)
+    durationStr = "Workout Duration: "+(f'{m:02d}:{s:02d}')
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.18))
+    durationText = Text(durationStr,textLoc,35,color.black,topmode=False)
+    durationText.draw(d)
 
-        #temp summary
-        pushUpStr = "Perfect Pushups: "+str(d.workoutPerfectCount["u"])+"/"+str(d.workoutPerfectCount["u_total"])
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.23))
-        pushText = Text(pushUpStr,textLoc,30,color.black,topmode=False)
-        pushText.draw(d)
-        coreStr = "Perfect Leg Raises: "+str(d.workoutPerfectCount["c"])+"/"+str(d.workoutPerfectCount["c_total"])
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.28))
-        coreText = Text(coreStr,textLoc,30,color.black,topmode=False)
-        coreText.draw(d)
-        lungeStr = "Perfect Lunges: "+str(d.workoutPerfectCount["l"])+"/"+str(d.workoutPerfectCount["l_total"])
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.33))
-        lungeText = Text(lungeStr,textLoc,30,color.black,topmode=False)
-        lungeText.draw(d)
+    initHeight = d.WINDOW_HEIGHT*0.23
+    lineHeight = d.WINDOW_HEIGHT*0.05
+    caloriesStr = "Active Calories: "+'{0:.1f}'.format(d.calBurned)
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(int(initHeight+0*lineHeight)))
+    caloriesText = Text(caloriesStr,textLoc,30,color.black,topmode=False)
+    caloriesText.draw(d)
+    HRstr = "Average Heart Rate: "+'{0:.1f}'.format(d.avgHR)
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(int(initHeight+1*lineHeight)))
+    hrtext = Text(HRstr,textLoc,30,color.black,topmode=False)
+    hrtext.draw(d)
 
-        d.newScreen = False
+    initHeight = d.WINDOW_HEIGHT*0.4
+    pushUpStr = "Perfect Pushups: "+str(d.workoutPerfectCount["u"])+"/"+str(d.workoutPerfectCount["u_total"])
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(initHeight+0*lineHeight))
+    pushText = Text(pushUpStr,textLoc,30,color.black,topmode=False)
+    pushText.draw(d)
+    coreStr = "Perfect Leg Raises: "+str(d.workoutPerfectCount["c"])+"/"+str(d.workoutPerfectCount["c_total"])
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(initHeight+1*lineHeight))
+    coreText = Text(coreStr,textLoc,30,color.black,topmode=False)
+    coreText.draw(d)
+    lungeStr = "Perfect Lunges: "+str(d.workoutPerfectCount["l"])+"/"+str(d.workoutPerfectCount["l_total"])
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(initHeight+2*lineHeight))
+    lungeText = Text(lungeStr,textLoc,30,color.black,topmode=False)
+    lungeText.draw(d)
+    d.newScreen = False
+
+    #handle mouse
+    clicked = d.mainButton.handle_mouse()
+    d.mainButton.draw(d)
+    if(clicked):
+        d.newScreen = True
+        d.currentScreen = screenMode.MAIN
+
 
 def drawHistoryOptions(d):
     if(d.newScreen):
@@ -624,7 +644,7 @@ def drawHistorySummary(d):
         textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.33))
         caloriesText = Text(caloriesStr,textLoc,30,color.black,topmode=False)
         caloriesText.draw(d)
-    
+
         heartRateStr = "Average Heart Rate: "+'{0:.1f}'.format(d.workout[5])
         textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.38))
         heartRateText = Text(heartRateStr,textLoc,30,color.black,topmode=False)
@@ -729,7 +749,6 @@ def drawHistorySummary(d):
         trendsImg = pygame.image.load(os.path.join("UI","images","icons","trends_og.png"))
         scaledTrendsImg = pygame.transform.scale(trendsImg, (w, h))
         d.screen.blit(scaledTrendsImg, (x - w/2, y - h/2))
-
         d.newScreen = False
 
 def drawHistoryTrends(d):
@@ -797,7 +816,6 @@ def drawHistoryTrends(d):
         textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.18))
         chooseText = Text(chooseStr,textLoc,30,color.black,topmode=False)
         chooseText.draw(d)
-
         d.newScreen = False
 
 def drawPause(d):
@@ -815,6 +833,17 @@ def drawPause(d):
     textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.55))
     pauseTextRes = Text(resumeMsg,textLoc,50,color.black,topmode=False,transparent=True)
     pauseTextRes.draw(d)
+
+def drawMain(d):
+    if(d.newScreen):
+        d.screen.fill(color.white)
+
+        titleStr = "Falcon: the Pro Gym Assistant"
+        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.18))
+        titleText = Text(titleStr,textLoc,70,color.black,topmode=False)
+        titleText.draw(d)
+        d.newScreen = False
+    #rewdraw buttons each time
 
 def main(d):
     frames = 0 
