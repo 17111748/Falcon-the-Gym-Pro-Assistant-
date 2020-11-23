@@ -1,4 +1,5 @@
 import numpy as np
+import os 
 
 perpendicular = 90 
 parallel = 180 
@@ -25,11 +26,17 @@ class LungeResult:
     def processResult(self): 
         self.feedback = [] 
         if (self.check2): 
-            self.feedback.append("Go Lower")
-        if (self.check3):
-            self.feedback.append("Back Legs too far Back")
-        if (self.check1): 
-            self.feedback.append("Front Knee too Forward")
+            tuple = ("Go Lower", os.path.join("audioFiles", "lunge", "goLower.mp3"))
+            self.feedback.append(tuple)
+        elif (self.check3):
+            tuple = ("Back Legs too far Back", os.path.join("audioFiles", "lunge", "backLegs.mp3"))
+            self.feedback.append(tuple)
+        elif (self.check1): 
+            tuple = ("Front Knee too Forward", os.path.join("audioFiles", "lunge", "frontLegs.mp3"))
+            self.feedback.append(tuple)
+        else: 
+            tuple = ("Perfect Rep!", os.path.join("audioFiles", "perfect.mp3"))
+            self.feedback.append(tuple)
 
         if (self.invalid): 
             self.feedback = []
@@ -200,7 +207,6 @@ class LungePostureAnalysis:
 
 
 #############################################################
-
 
 # forwardForward = [(0.0, 0.0), (29.5, 80.5), (15.5, 87.5), (49.5, 88.5), (65.0, 127.5), (96.5, 66.5), (84.5, 118.5), (92.0, 48.5)]  
 # perfectForward = [(0.0, 0.0), (17.5, 72.5), (0.0, 0.0), (38.0, 85.0), (60.5, 122.5), (87.5, 61.0), (82.0, 118.0), (88.0, 42.0)]

@@ -1,4 +1,5 @@
 import numpy as np
+import os 
 
 perpendicular = 90 
 parallel = 180 
@@ -28,13 +29,17 @@ class PushupResult:
     def processResult(self): 
         self.feedback = []
         if (self.check1):
-            self.feedback.append("Position your Hands Slightly Backward")
-        if (self.check2):
-            self.feedback.append("Go Lower")
-        if (self.check3):
-            self.feedback.append("Butt is Too High")
-        if (self.check4):
-            self.feedback.append("Lower Body too Low to the Ground")
+            tuple = ("Position your Hands Slightly Backward", os.path.join("audioFiles", "pushup", "hand.mp3"))
+            self.feedback.append(tuple)
+        elif (self.check2):
+            tuple = ("Go Lower", os.path.join("audioFiles", "pushup", "goLower.mp3"))
+            self.feedback.append(tuple)
+        elif (self.check3):
+            tuple = ("Butt is Too High", os.path.join("audioFiles", "pushup", "buttTooHigh.mp3"))
+            self.feedback.append(tuple)
+        else: 
+            tuple = ("Perfect Rep!", os.path.join("audioFiles", "perfect.mp3"))
+            self.feedback.append(tuple)
 
         if (self.invalid): 
             self.feedback = []
@@ -195,10 +200,6 @@ class PushupPostureAnalysis:
         
         if not (self.greaterThan(line1Slope, slopeOfShoulder, 0)):
             self.pushup.check3 = True 
-
-
-        # if not (self.greaterThan(wrist[0], knee[0], -1)):
-        #     self.pushup.check4 = True 
 
         self.pushup.processResult() 
         
