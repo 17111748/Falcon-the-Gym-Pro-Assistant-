@@ -1,4 +1,5 @@
 import numpy as np
+import os 
 
 expectedHipAngle = 100 
 parallel = 180 
@@ -27,11 +28,17 @@ class LegRaiseResult:
     def processResult(self): 
         self.feedback = [] 
         if (self.check1): 
-            self.feedback.append("Raise Your Legs Higher")
-        if (self.check2):
-            self.feedback.append("Over-Extending")
-        if (self.check3):
-            self.feedback.append("Knees are Bent")
+            tuple = ("Raise Your Legs Higher", os.path.join("audioFiles", "legRaise", "raiseHigh.mp3"))
+            self.feedback.append(tuple)
+        elif (self.check2):
+            tuple = ("Over-Extending", os.path.join("audioFiles", "legRaise", "overExtend.mp3"))
+            self.feedback.append(tuple)
+        elif (self.check3):
+            tuple = ("Knees are Bent", os.path.join("audioFiles", "legRaise", "kneeBent.mp3"))
+            self.feedback.append(tuple)
+        else: 
+            tuple = ("Perfect Rep!", os.path.join("audioFiles", "perfect.mp3"))
+            self.feedback.append(tuple)
         
         if (self.invalid): 
             self.feedback = []
@@ -147,8 +154,6 @@ class LegRaisePostureAnalysis:
         if not (self.lessThan(perpendicular, angleHip, 3)):
             self.legRaise.check2 = True 
 
-        print(angleKnee)
-        print(parallel)
         if not (self.sameAngle(angleKnee, parallel, 15)):
             self.legRaise.check3 = True 
 
