@@ -205,7 +205,7 @@ def initWorkouts(d):
         "u": 7.55
     }
 
-    d.currentScreen = screenMode.SUMMARY
+    d.currentScreen = screenMode.HISTORYOPTIONS
     d.newScreen = True
 
     d.breakTime = d.SET_BREAK_TIME
@@ -561,10 +561,35 @@ def drawSummary(d):
     #handle mouse
     clicked = d.mainButton.handle_mouse()
     d.mainButton.draw(d)
+    print(d.mainButton.highlight)
     if(clicked):
         d.newScreen = True
         d.currentScreen = screenMode.MAIN
 
+def drawScreenChangeButtons(d, previousScreen):
+        x = int(d.WINDOW_WIDTH * 0.1)
+        y = int(d.WINDOW_HEIGHT * 0.1)
+        w = int(d.WINDOW_HEIGHT * 0.13)
+        h = int(d.WINDOW_HEIGHT * 0.13)
+
+        normalBack = os.path.join("UI","images","icons","back_og.png")
+        highlightedBack = os.path.join("UI","images","icons","back_highlighted.png")
+        backButton = ImageButton(x, y, w, h, color.black, "back", normalImg = normalBack, highlightedImg = highlightedBack)
+        if(backButton.handle_mouse()):
+            d.newScreen = True
+            d.currentScreen = previousScreen
+            print(d.currentScreen)
+        backButton.draw(d)
+
+        x = int(d.WINDOW_WIDTH * 0.9)
+
+        normalTrends = os.path.join("UI","images","icons","trends_og.png")
+        highlightedTrends = os.path.join("UI","images","icons","trends_highlighted.png")
+        trendsButton = ImageButton(x, y, w, h, color.black, "back", normalImg = normalTrends, highlightedImg = highlightedTrends)
+        if(trendsButton.handle_mouse()):
+            d.newScreen = True
+            d.currentScreen = screenMode.HISTORYTRENDS
+        trendsButton.draw(d)
 
 def drawHistoryOptions(d):
     if(d.newScreen):
@@ -581,40 +606,18 @@ def drawHistoryOptions(d):
         chooseText.draw(d)
 
         data = d.db.getWorkouts(d.currProfile)
-        d.buttons = []
 
         # Displaying the set of options
-        for i in range (5):
-            workout = data[5-i-1]
+        for i in range (len(data)):
+            workout = data[len(data)-i-1]
             optionStr = workout[2]
-            option = Button(int(d.WINDOW_WIDTH * 0.5), int(d.WINDOW_HEIGHT * 0.35 + 100 * i), int(0.6 * d.WINDOW_WIDTH), 55, color.black, optionStr, info = workout)
+            option = Button(int(d.WINDOW_WIDTH * 0.5), int(d.WINDOW_HEIGHT * 0.35 + 100 * i), int(0.6 * d.WINDOW_WIDTH), 50, color.black, optionStr, info = workout)
+            if(option.handle_mouse()):  
+                d.currentScreen = screenMode.HISTORYSUMMARY
+                d.workout = workout
             option.draw(d)
-            d.buttons.append(option)
-
-        x = int(d.WINDOW_WIDTH * 0.1)
-        y = int(d.WINDOW_HEIGHT * 0.1)
-        w = int(d.WINDOW_HEIGHT * 0.13)
-        h = int(d.WINDOW_HEIGHT * 0.13)
-
-        back = Button(x, y, w, h, color.black, "", info = "back")
-        back.draw(d)
-        d.buttons.append(back)
-
-        backImg = pygame.image.load(os.path.join("UI","images","icons","back_og.png"))
-        scaledImg = pygame.transform.scale(backImg, (w, h))
-        d.screen.blit(scaledImg, (x - w/2, y - h/2))
-
-        x = int(d.WINDOW_WIDTH * 0.9)
-
-        trends = Button(x, y, w, h, color.black, "", info = "trends")
-        trends.draw(d)
-        d.buttons.append(trends)
-
-        trendsImg = pygame.image.load(os.path.join("UI","images","icons","trends_og.png"))
-        scaledTrendsImg = pygame.transform.scale(trendsImg, (w, h))
-        d.screen.blit(scaledTrendsImg, (x - w/2, y - h/2))
-
-        d.newScreen = False
+        
+        drawScreenChangeButtons(d, screenMode.MAIN)
 
 def drawHistorySummary(d):
     if(d.newScreen):
@@ -663,6 +666,8 @@ def drawHistorySummary(d):
         my_dpi = 96
         figure_height = (d.WINDOW_HEIGHT * 0.4)/my_dpi
         figure_width = (d.WINDOW_WIDTH * 0.8)/my_dpi
+
+        plt.close("all")
 
         fig = plt.figure(figsize=(figure_width, figure_height))
 
@@ -724,32 +729,7 @@ def drawHistorySummary(d):
         lungeValText = Text(lungeValStr,textLoc,30,color.black,topmode=True)
         lungeValText.draw(d)
 
-        # Drawing the buttons
-        d.buttons = []
-
-        x = int(d.WINDOW_WIDTH * 0.1)
-        y = int(d.WINDOW_HEIGHT * 0.1)
-        w = int(d.WINDOW_HEIGHT * 0.13)
-        h = int(d.WINDOW_HEIGHT * 0.13)
-
-        back = Button(x, y, w, h, color.black, "", info = "back")
-        back.draw(d)
-        d.buttons.append(back)
-
-        backImg = pygame.image.load(os.path.join("UI","images","icons","back_og.png"))
-        scaledImg = pygame.transform.scale(backImg, (w, h))
-        d.screen.blit(scaledImg, (x - w/2, y - h/2))
-
-        x = int(d.WINDOW_WIDTH * 0.9)
-
-        trends = Button(x, y, w, h, color.black, "", info = "trends")
-        trends.draw(d)
-        d.buttons.append(trends)
-
-        trendsImg = pygame.image.load(os.path.join("UI","images","icons","trends_og.png"))
-        scaledTrendsImg = pygame.transform.scale(trendsImg, (w, h))
-        d.screen.blit(scaledTrendsImg, (x - w/2, y - h/2))
-        d.newScreen = False
+        drawScreenChangeButtons(d, screenMode.HISTORYOPTIONS)
 
 def drawHistoryTrends(d):
     if(d.newScreen):
@@ -791,32 +771,7 @@ def drawHistoryTrends(d):
         surf = pygame.image.fromstring(raw_data, size, "RGB")
         d.screen.blit(surf, (int(d.WINDOW_WIDTH * 0.1), int(d.WINDOW_HEIGHT*0.18)))
 
-        d.buttons = []
-        
-        x = int(d.WINDOW_WIDTH * 0.1)
-        y = int(d.WINDOW_HEIGHT * 0.1)
-        w = int(d.WINDOW_HEIGHT * 0.13)
-        h = int(d.WINDOW_HEIGHT * 0.13)
-        
-        back = Button(x, y, w, h, color.black, "", info = "back")
-        back.draw(d)
-        d.buttons.append(back)
-        
-        backImg = pygame.image.load(os.path.join("UI","images","icons","back_og.png"))
-        scaledImg = pygame.transform.scale(backImg, (w, h))
-        d.screen.blit(scaledImg, (x - w/2, y - h/2))
-
-
-        titleStr = "Workout History"
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.1))
-        titleText = Text(titleStr,textLoc,60,color.black,topmode=False)
-        titleText.draw(d)
-
-        chooseStr = "Analyzing the past 5 workouts"
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.18))
-        chooseText = Text(chooseStr,textLoc,30,color.black,topmode=False)
-        chooseText.draw(d)
-        d.newScreen = False
+        drawScreenChangeButtons(d, screenMode.HISTORYOPTIONS)
 
 def drawPause(d):
         #create transparent layer when pausing
@@ -868,6 +823,7 @@ def main(d):
             drawHistoryTrends(d)
         pygame.display.update()
         pygameHandleEvent(d)
+        # pygameHandleButtons(d)
         # rollingAvg = (rollingAvg*frames+d.clock.tick(25))/(frames+1)
         # frames+=1
         # print(rollingAvg)
@@ -894,32 +850,33 @@ def pygameHandleEvent(d):
                         drawPause(d)
                         d.pause = True
                         d.workoutStopwatch.stop()
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            if d.currentScreen == screenMode.HISTORYOPTIONS:
-                for button in d.buttons:
-                    if button.handle_mouse():
-                        if button.info == "back":
-                            d.currentScreen = screenMode.MAIN
-                        elif button.info == "trends":
-                            d.currentScreen = screenMode.HISTORYTRENDS
-                        else:
-                            d.currentScreen = screenMode.HISTORYSUMMARY
-                            d.workout = button.info
-                        d.newScreen = True
-            elif d.currentScreen == screenMode.HISTORYSUMMARY:
-                for button in d.buttons:
-                    if button.handle_mouse():
-                        if button.info == "back":
-                            d.currentScreen = screenMode.HISTORYOPTIONS
-                        elif button.info == "trends":
-                            d.currentScreen = screenMode.HISTORYTRENDS
-                        d.newScreen = True
-            elif d.currentScreen == screenMode.HISTORYTRENDS:
-                for button in d.buttons:
-                    if button.handle_mouse():
-                        if button.info == "back":
-                            d.currentScreen = screenMode.HISTORYOPTIONS
-                        d.newScreen = True
+
+def pygameHandleButtons(d):
+    if d.currentScreen == screenMode.HISTORYOPTIONS:
+        for button in d.buttons:
+            if button.handle_mouse():
+                if button.info == "back":
+                    d.currentScreen = screenMode.MAIN
+                elif button.info == "trends":
+                    d.currentScreen = screenMode.HISTORYTRENDS
+                else:
+                    d.currentScreen = screenMode.HISTORYSUMMARY
+                    d.workout = button.info
+            # button.draw(d)
+    elif d.currentScreen == screenMode.HISTORYSUMMARY:
+        for button in d.buttons:
+            if button.handle_mouse():
+                if button.info == "back":
+                    d.currentScreen = screenMode.HISTORYOPTIONS
+                elif button.info == "trends":
+                    d.currentScreen = screenMode.HISTORYTRENDS
+            # button.draw(d)
+    elif d.currentScreen == screenMode.HISTORYTRENDS:
+        for button in d.buttons:
+            if button.handle_mouse():
+                if button.info == "back":
+                    d.currentScreen = screenMode.HISTORYOPTIONS
+            # button.draw(d)
 
 data = data()
 init(data)

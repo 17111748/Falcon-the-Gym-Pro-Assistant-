@@ -72,3 +72,25 @@ class Button(object):
             tempText = Text(self.text,self.textLoc,self.textSize+2, color.black)
 
         tempText.draw(d)
+
+class ImageButton(Button):
+    def __init__(self, x, y, w, h, col, text, normalImg, highlightedImg, textSize = 32, info = None):
+        super().__init__(x, y, w, h, col, text, textSize, info)
+        self.normalImg = normalImg
+        self.highlightedImg = highlightedImg
+        self.w = w
+        self.h = h 
+    
+    def draw(self,d):
+        if(self.highlight==False):
+            img = pygame.image.load(self.normalImg)
+            scaledImg = pygame.transform.scale(img, (self.w, self.h))
+            d.screen.blit(scaledImg, (self.x, self.y))
+            pygame.draw.rect(d.screen, self.color,self.rect, 2, border_radius=10)
+            tempText = Text(self.text,self.textLoc,self.textSize, color.black)
+        else:
+            img = pygame.image.load(self.highlightedImg)
+            scaledImg = pygame.transform.scale(img, (self.w, self.h))
+            d.screen.blit(scaledImg, (self.x, self.y))
+            pygame.draw.rect(d.screen, self.color, self.rect,width=4,border_radius=10)
+            tempText = Text(self.text,self.textLoc,self.textSize+2, color.black)
