@@ -243,6 +243,7 @@ def initAnalysis(d):
 def initHistory(d):
     d.buttons = []
     d.workout = None
+    d.pageNum = 0
 
 def initSummary(d):
     x,y = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.75))
@@ -657,12 +658,13 @@ def drawHistorySummary(d):
         # Params
         green = "#47ff36"
         red = "#ff3636"
-        perfectPushup = 5
-        imperfectPushup = 3
-        perfectLegRaise = 7
-        imperfectLegRaise = 1
-        perfectLunge = 7
-        imperfectLunge = 3
+        perfectPushup = workout[7]
+        imperfectPushup = workout[8] - workout[7]
+        perfectLegRaise = workout[9]
+        imperfectLegRaise = workout[10] - workout[9]
+        perfectLunge = workout[11]
+        imperfectLunge = workout[12] - workout[11]
+        
         my_dpi = 96
         figure_height = (d.WINDOW_HEIGHT * 0.4)/my_dpi
         figure_width = (d.WINDOW_WIDTH * 0.8)/my_dpi
@@ -731,6 +733,27 @@ def drawHistorySummary(d):
 
         drawScreenChangeButtons(d, screenMode.HISTORYOPTIONS)
 
+def filterData(workouts):
+    filteredData = dict()
+    for workout in workouts:
+        date = workout[2].split()[0]
+        if date in filteredData:
+            filteredData[date]["perfPush"] += workout[7]
+            filteredData[date]["totalPush"] += workout[8]
+            filteredData[date]["perfRaise"] += workout[9]
+            filteredData[date]["totalRaise"] += workout[10]
+            filteredData[date]["perfLunge"] += workout[11]
+            filteredData[date]["totalLunge"] += workout[12]
+        else:
+            filteredData[date] = dict()
+            filteredData[date]["perfPush"] = workout[7]
+            filteredData[date]["totalPush"] = workout[8]
+            filteredData[date]["perfRaise"] = workout[9]
+            filteredData[date]["totalRaise"] = workout[10]
+            filteredData[date]["perfLunge"] = workout[11]
+            filteredData[date]["totalLunge"] = workout[12]
+    return filteredData
+ 
 def drawHistoryTrends(d):
     if(d.newScreen):
         d.screen.fill(color.white)
@@ -745,22 +768,30 @@ def drawHistoryTrends(d):
 
         ax = fig.add_subplot(111)
         
-        perfectPushup = [3, 4, 5, 6, 8]
-        perfectLunge = [8, 1, 6, 2, 3]
-        perfectLegRaise = [1, 9, 2, 3, 4]
+        # perfectPushup = [3, 4, 5, 6, 8]
+        # perfectLunge = [8, 1, 6, 2, 3]
+        # perfectLegRaise = [1, 9, 2, 3, 4]
 
         data = d.db.getWorkouts(d.currProfile)
+        data = filterData(data)
+        perfectPushup = []
+        perfectLunge = []
+        perfectLegRaise = []
         sessions = []
-        modifiedSessions = []
-        for i in range (5):
-            sessions.append(data[i][2])
-            modifiedSessions.append(data[i][2].split()[0])
+        dates = sorted(data.keys(), reverse=True)
 
+        for i in range (5):
+            date = dates[i]
+            sessions.append(date)
+            summary = data[date]
+            perfectPushup.append(summary["perfPush"] / summary["totalPush"])
+            perfectLegRaise.append(summary["perfRaise"] / summary["totalRaise"])
+            perfectLunge.append(summary["perfLunge"] / summary["totalLunge"])
 
         ax.plot(sessions, perfectPushup, label="Perfect Pushups", color="blue")
         ax.plot(sessions, perfectLegRaise, label="Perfect Leg Raises", color="red")
         ax.plot(sessions, perfectLunge, label="Perfect Lunges", color="green")
-        plt.xticks(sessions, modifiedSessions)
+        # plt.xticks(sessions, modifiedSessions)
         ax.legend()
 
         canvas = agg.FigureCanvasAgg(fig)
