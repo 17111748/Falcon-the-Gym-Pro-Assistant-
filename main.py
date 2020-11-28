@@ -244,6 +244,7 @@ def initHistory(d):
     d.buttons = []
     d.workout = None
     d.pageNum = 0
+    d.screenChangeTime = 0
 
 def initSummary(d):
     x,y = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.75))
@@ -576,10 +577,11 @@ def drawScreenChangeButtons(d, previousScreen):
         normalBack = os.path.join("UI","images","icons","back_og.png")
         highlightedBack = os.path.join("UI","images","icons","back_highlighted.png")
         backButton = ImageButton(x, y, w, h, color.black, "back", normalImg = normalBack, highlightedImg = highlightedBack)
-        if(backButton.handle_mouse()):
+        currTime = pygame.time.get_ticks()
+        if(backButton.handle_mouse() and currTime - d.screenChangeTime > 250):
             d.newScreen = True
             d.currentScreen = previousScreen
-            print(d.currentScreen)
+            d.screenChangeTime = pygame.time.get_ticks()
         backButton.draw(d)
 
         x = int(d.WINDOW_WIDTH * 0.9)
@@ -658,12 +660,12 @@ def drawHistorySummary(d):
         # Params
         green = "#47ff36"
         red = "#ff3636"
-        perfectPushup = workout[7]
-        imperfectPushup = workout[8] - workout[7]
-        perfectLegRaise = workout[9]
-        imperfectLegRaise = workout[10] - workout[9]
-        perfectLunge = workout[11]
-        imperfectLunge = workout[12] - workout[11]
+        perfectPushup = d.workout[7]
+        imperfectPushup = d.workout[8] - d.workout[7]
+        perfectLegRaise = d.workout[9]
+        imperfectLegRaise = d.workout[10] - d.workout[9]
+        perfectLunge = d.workout[11]
+        imperfectLunge = d.workout[12] - d.workout[11]
         
         my_dpi = 96
         figure_height = (d.WINDOW_HEIGHT * 0.4)/my_dpi
@@ -882,32 +884,32 @@ def pygameHandleEvent(d):
                         d.pause = True
                         d.workoutStopwatch.stop()
 
-def pygameHandleButtons(d):
-    if d.currentScreen == screenMode.HISTORYOPTIONS:
-        for button in d.buttons:
-            if button.handle_mouse():
-                if button.info == "back":
-                    d.currentScreen = screenMode.MAIN
-                elif button.info == "trends":
-                    d.currentScreen = screenMode.HISTORYTRENDS
-                else:
-                    d.currentScreen = screenMode.HISTORYSUMMARY
-                    d.workout = button.info
-            # button.draw(d)
-    elif d.currentScreen == screenMode.HISTORYSUMMARY:
-        for button in d.buttons:
-            if button.handle_mouse():
-                if button.info == "back":
-                    d.currentScreen = screenMode.HISTORYOPTIONS
-                elif button.info == "trends":
-                    d.currentScreen = screenMode.HISTORYTRENDS
-            # button.draw(d)
-    elif d.currentScreen == screenMode.HISTORYTRENDS:
-        for button in d.buttons:
-            if button.handle_mouse():
-                if button.info == "back":
-                    d.currentScreen = screenMode.HISTORYOPTIONS
-            # button.draw(d)
+# def pygameHandleButtons(d):
+#     if d.currentScreen == screenMode.HISTORYOPTIONS:
+#         for button in d.buttons:
+#             if button.handle_mouse():
+#                 if button.info == "back":
+#                     d.currentScreen = screenMode.MAIN
+#                 elif button.info == "trends":
+#                     d.currentScreen = screenMode.HISTORYTRENDS
+#                 else:
+#                     d.currentScreen = screenMode.HISTORYSUMMARY
+#                     d.workout = button.info
+#             # button.draw(d)
+#     elif d.currentScreen == screenMode.HISTORYSUMMARY:
+#         for button in d.buttons:
+#             if button.handle_mouse():
+#                 if button.info == "back":
+#                     d.currentScreen = screenMode.HISTORYOPTIONS
+#                 elif button.info == "trends":
+#                     d.currentScreen = screenMode.HISTORYTRENDS
+#             # button.draw(d)
+#     elif d.currentScreen == screenMode.HISTORYTRENDS:
+#         for button in d.buttons:
+#             if button.handle_mouse():
+#                 if button.info == "back":
+#                     d.currentScreen = screenMode.HISTORYOPTIONS
+#             # button.draw(d)
 
 data = data()
 init(data)
