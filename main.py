@@ -760,11 +760,18 @@ def drawHistoryTrends(d):
     if(d.newScreen):
         d.screen.fill(color.white)
 
+        titleStr = "Workout Trends"
+        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.1))
+        titleText = Text(titleStr,textLoc,60,color.black,topmode=False)
+        titleText.draw(d)
+
         data = d.db.getWorkouts(d.currProfile)
 
         my_dpi = 96
         figure_height = (d.WINDOW_HEIGHT * 0.8)/my_dpi
         figure_width = (d.WINDOW_WIDTH * 0.8)/my_dpi
+        
+        plt.close("all")
 
         fig = plt.figure(figsize=(figure_width, figure_height))
 
@@ -782,19 +789,22 @@ def drawHistoryTrends(d):
         sessions = []
         dates = sorted(data.keys(), reverse=True)
 
-        for i in range (5):
+        for i in range (min(5, len(data))):
             date = dates[i]
             sessions.append(date)
             summary = data[date]
-            perfectPushup.append(summary["perfPush"] / summary["totalPush"])
-            perfectLegRaise.append(summary["perfRaise"] / summary["totalRaise"])
-            perfectLunge.append(summary["perfLunge"] / summary["totalLunge"])
+            perfectPushup.append(summary["perfPush"] / summary["totalPush"] * 100)
+            perfectLegRaise.append(summary["perfRaise"] / summary["totalRaise"] * 100)
+            perfectLunge.append(summary["perfLunge"] / summary["totalLunge"] * 100)
 
-        ax.plot(sessions, perfectPushup, label="Perfect Pushups", color="blue")
-        ax.plot(sessions, perfectLegRaise, label="Perfect Leg Raises", color="red")
-        ax.plot(sessions, perfectLunge, label="Perfect Lunges", color="green")
+        push, = ax.plot(sessions, perfectPushup, label="Perfect Pushups", color="blue")
+        ax.scatter(sessions, perfectPushup, label="Perfect Pushups", color="blue")
+        rais, = ax.plot(sessions, perfectLegRaise, label="Perfect Leg Raises", color="red")
+        ax.scatter(sessions, perfectLegRaise, label="Perfect Leg Raises", color="red")
+        lunge, = ax.plot(sessions, perfectLunge, label="Perfect Lunges", color="green")
+        ax.scatter(sessions, perfectLunge, label="Perfect Lunges", color="green")
         # plt.xticks(sessions, modifiedSessions)
-        ax.legend()
+        ax.legend([push, rais, lunge], ["Perfect Pushups", "Perfect Leg Raises", "Perfect Lunges"])
 
         canvas = agg.FigureCanvasAgg(fig)
         canvas.draw()
