@@ -568,7 +568,10 @@ def drawSummary(d):
         d.newScreen = True
         d.currentScreen = screenMode.MAIN
 
-def drawScreenChangeButtons(d, previousScreen):
+# Set dataLength to 0 if dont want the navigation buttons to show up
+def drawScreenChangeButtons(d, previousScreen, dataLength):
+        
+        # Back button
         x = int(d.WINDOW_WIDTH * 0.1)
         y = int(d.WINDOW_HEIGHT * 0.1)
         w = int(d.WINDOW_HEIGHT * 0.13)
@@ -582,8 +585,10 @@ def drawScreenChangeButtons(d, previousScreen):
             d.newScreen = True
             d.currentScreen = previousScreen
             d.screenChangeTime = pygame.time.get_ticks()
+            d.pageNum = 0
         backButton.draw(d)
 
+        # Trends button
         x = int(d.WINDOW_WIDTH * 0.9)
 
         normalTrends = os.path.join("UI","images","icons","trends_og.png")
@@ -592,7 +597,38 @@ def drawScreenChangeButtons(d, previousScreen):
         if(trendsButton.handle_mouse()):
             d.newScreen = True
             d.currentScreen = screenMode.HISTORYTRENDS
+            d.pageNum = 0
         trendsButton.draw(d)
+
+        # Left button
+        x = int(d.WINDOW_WIDTH * 0.1)
+        y = int(d.WINDOW_HEIGHT * 0.5)
+
+        normalLeft = os.path.join("UI","images","icons","back_og.png")
+        highlightedLeft = os.path.join("UI","images","icons","back_highlighted.png")
+        leftButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalLeft, highlightedImg = highlightedLeft)
+        currTime = pygame.time.get_ticks()
+        if(leftButton.handle_mouse() and currTime - d.screenChangeTime > 250):
+            if dataLength - (5 * (d.pageNum + 1)) > 0:
+                d.pageNum += 1
+            d.screenChangeTime = pygame.time.get_ticks()
+        if dataLength - (5 * (d.pageNum + 1)) > 0:
+            leftButton.draw(d)
+
+        # Right button
+        x = int(d.WINDOW_WIDTH * 0.9)
+        y = int(d.WINDOW_HEIGHT * 0.5)
+
+        normalRight = os.path.join("UI","images","icons","right_og.png")
+        highlightedRight = os.path.join("UI","images","icons","right_highlighted.png")
+        rightButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalRight, highlightedImg = highlightedRight)
+        currTime = pygame.time.get_ticks()
+        if(rightButton.handle_mouse() and currTime - d.screenChangeTime > 250):
+            if d.pageNum > 0:
+                d.pageNum -= 1
+            d.screenChangeTime = pygame.time.get_ticks()
+        if d.pageNum > 0:
+            rightButton.draw(d)
 
 def drawHistoryOptions(d):
     if(d.newScreen):
@@ -608,7 +644,10 @@ def drawHistoryOptions(d):
         chooseText = Text(chooseStr,textLoc,30,color.black,topmode=False)
         chooseText.draw(d)
 
-        data = d.db.getWorkouts(d.currProfile)
+        allData = d.db.getWorkouts(d.currProfile)
+        endIndex = len(allData) - (d.pageNum * 5)
+        startIndex = max(0, endIndex  - 5)
+        data = allData[startIndex:endIndex]
 
         # Displaying the set of options
         for i in range (len(data)):
@@ -618,9 +657,10 @@ def drawHistoryOptions(d):
             if(option.handle_mouse()):  
                 d.currentScreen = screenMode.HISTORYSUMMARY
                 d.workout = workout
+                d.pageNum = 0
             option.draw(d)
         
-        drawScreenChangeButtons(d, screenMode.MAIN)
+        drawScreenChangeButtons(d, screenMode.MAIN, len(allData))
 
 def drawHistorySummary(d):
     if(d.newScreen):
@@ -692,8 +732,7 @@ def drawHistorySummary(d):
         ax.axis("off")
         ax.barh("Lunges", perfectLunge, color = green)
         ax.barh("Lunges", imperfectLunge, color = red, left = perfectLunge)
-        
-        
+         
         canvas = agg.FigureCanvasAgg(fig)
         canvas.draw()
         renderer = canvas.get_renderer()
@@ -733,7 +772,7 @@ def drawHistorySummary(d):
         lungeValText = Text(lungeValStr,textLoc,30,color.black,topmode=True)
         lungeValText.draw(d)
 
-        drawScreenChangeButtons(d, screenMode.HISTORYOPTIONS)
+        drawScreenChangeButtons(d, screenMode.HISTORYOPTIONS, 0)
 
 def filterData(workouts):
     filteredData = dict()
@@ -787,10 +826,12 @@ def drawHistoryTrends(d):
         perfectLunge = []
         perfectLegRaise = []
         sessions = []
-        dates = sorted(data.keys(), reverse=True)
+        allDates = sorted(data.keys())
+        endIndex = len(allDates) - (d.pageNum * 5)
+        startIndex = max(0, endIndex  - 5)
+        dates = allDates[startIndex:endIndex]
 
-        for i in range (min(5, len(data))):
-            date = dates[i]
+        for date in dates:
             sessions.append(date)
             summary = data[date]
             perfectPushup.append(summary["perfPush"] / summary["totalPush"] * 100)
@@ -803,7 +844,7 @@ def drawHistoryTrends(d):
         ax.scatter(sessions, perfectLegRaise, label="Perfect Leg Raises", color="red")
         lunge, = ax.plot(sessions, perfectLunge, label="Perfect Lunges", color="green")
         ax.scatter(sessions, perfectLunge, label="Perfect Lunges", color="green")
-        # plt.xticks(sessions, modifiedSessions)
+
         ax.legend([push, rais, lunge], ["Perfect Pushups", "Perfect Leg Raises", "Perfect Lunges"])
 
         canvas = agg.FigureCanvasAgg(fig)
@@ -814,7 +855,7 @@ def drawHistoryTrends(d):
         surf = pygame.image.fromstring(raw_data, size, "RGB")
         d.screen.blit(surf, (int(d.WINDOW_WIDTH * 0.1), int(d.WINDOW_HEIGHT*0.18)))
 
-        drawScreenChangeButtons(d, screenMode.HISTORYOPTIONS)
+        drawScreenChangeButtons(d, screenMode.HISTORYOPTIONS, len(allDates))
 
 def drawPause(d):
         #create transparent layer when pausing
