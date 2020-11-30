@@ -86,11 +86,7 @@ class ImageButton(Button):
             img = pygame.image.load(self.normalImg)
             scaledImg = pygame.transform.scale(img, (self.w, self.h))
             d.screen.blit(scaledImg, (self.x, self.y))
-            pygame.draw.rect(d.screen, self.color,self.rect, 2, border_radius=10)
-            tempText = Text(self.text,self.textLoc,self.textSize, color.black)
         else:
             img = pygame.image.load(self.highlightedImg)
             scaledImg = pygame.transform.scale(img, (self.w, self.h))
             d.screen.blit(scaledImg, (self.x, self.y))
-            pygame.draw.rect(d.screen, self.color, self.rect,width=4,border_radius=10)
-            tempText = Text(self.text,self.textLoc,self.textSize+2, color.black)

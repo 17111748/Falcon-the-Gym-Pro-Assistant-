@@ -664,116 +664,129 @@ def drawHistoryOptions(d):
         
         drawScreenChangeButtons(d, screenMode.MAIN, len(allData))
 
+def drawSummaryInfo(d):
+    titleStr = "Workout History"
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.1))
+    titleText = Text(titleStr,textLoc,60,color.black,topmode=False)
+    titleText.draw(d)
+
+    workoutStr = "Workout on "+ d.workout[2]
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.18))
+    workoutText = Text(workoutStr,textLoc,30,color.black,topmode=False)
+    workoutText.draw(d)
+
+    focusStr = "Focus: "+ d.workout[0]
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.23))
+    focusText = Text(focusStr,textLoc,30,color.black,topmode=False)
+    focusText.draw(d)
+
+    durationStr = "Duration: "+ str(d.workout[1])
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.28))
+    durationText = Text(durationStr,textLoc,30,color.black,topmode=False)
+    durationText.draw(d)
+    
+    caloriesStr = "Calories Burned: "+'{0:.1f}'.format(d.workout[4])
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.33))
+    caloriesText = Text(caloriesStr,textLoc,30,color.black,topmode=False)
+    caloriesText.draw(d)
+
+    heartRateStr = "Average Heart Rate: "+'{0:.1f}'.format(d.workout[5])
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.38))
+    heartRateText = Text(heartRateStr,textLoc,30,color.black,topmode=False)
+    heartRateText.draw(d)
+
+def drawSummaryGraphInfo(d):
+
+    # Params
+    perfectPushup = d.workout[7]
+    imperfectPushup = d.workout[8] - d.workout[7]
+    perfectLegRaise = d.workout[9]
+    imperfectLegRaise = d.workout[10] - d.workout[9]
+    perfectLunge = d.workout[11]
+    imperfectLunge = d.workout[12] - d.workout[11]
+
+    pushupStr = "Pushups: "
+    textLoc = (int(d.WINDOW_WIDTH*0.07), int(d.WINDOW_HEIGHT*0.50))
+    pushupText = Text(pushupStr,textLoc,30,color.black,topmode=True)
+    pushupText.draw(d)
+
+    pushupValStr = '{0:.1f}'.format(perfectPushup * 100 / (perfectPushup + imperfectPushup)) + "% Perfect"
+    textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.50))
+    pushupValText = Text(pushupValStr,textLoc,30,color.black,topmode=True)
+    pushupValText.draw(d)
+
+    legRaiseStr = "Leg Raises: "
+    textLoc = (int(d.WINDOW_WIDTH*0.07), int(d.WINDOW_HEIGHT*0.635))
+    legRaiseText = Text(legRaiseStr,textLoc,30,color.black,topmode=True)
+    legRaiseText.draw(d)
+
+    legRaiseValStr = '{0:.1f}'.format(perfectLegRaise * 100 / (perfectLegRaise + imperfectLegRaise)) + "% Perfect"
+    textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.635))
+    legRaiseValText = Text(legRaiseValStr,textLoc,30,color.black,topmode=True)
+    legRaiseValText.draw(d)
+
+    lungeStr = "Lunges: "
+    textLoc = (int(d.WINDOW_WIDTH*0.07), int(d.WINDOW_HEIGHT*0.77))
+    lungeText = Text(lungeStr,textLoc,30,color.black,topmode=True)
+    lungeText.draw(d)
+
+    lungeValStr = '{0:.1f}'.format(perfectLunge * 100 / (perfectLunge + imperfectLunge)) + "% Perfect"
+    textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.77))
+    lungeValText = Text(lungeValStr,textLoc,30,color.black,topmode=True)
+    lungeValText.draw(d)
+
+def drawSummaryGraph(d):
+    # Params
+    green = "#47ff36"
+    red = "#ff3636"
+    perfectPushup = d.workout[7]
+    imperfectPushup = d.workout[8] - d.workout[7]
+    perfectLegRaise = d.workout[9]
+    imperfectLegRaise = d.workout[10] - d.workout[9]
+    perfectLunge = d.workout[11]
+    imperfectLunge = d.workout[12] - d.workout[11]
+    
+    my_dpi = 96
+    figure_height = (d.WINDOW_HEIGHT * 0.4)/my_dpi
+    figure_width = (d.WINDOW_WIDTH * 0.8)/my_dpi
+
+    plt.close("all") # Closing graph before drawing a new one to prevent excess use of memory
+
+    fig = plt.figure(figsize=(figure_width, figure_height))
+
+    # Pushups
+    ax = fig.add_subplot(511)
+    ax.axis("off")
+    ax.barh("Pushup", perfectPushup, color = green)
+    ax.barh("Pushup", imperfectPushup, color = red, left = perfectPushup)
+
+    # Leg Raises    
+    ax = fig.add_subplot(513)
+    ax.axis("off")
+    ax.barh("Leg raises", perfectLegRaise, color = green)
+    ax.barh("Leg raises", imperfectLegRaise, color = red, left = perfectLegRaise)
+
+    # Lunges
+    ax = fig.add_subplot(515)
+    ax.axis("off")
+    ax.barh("Lunges", perfectLunge, color = green)
+    ax.barh("Lunges", imperfectLunge, color = red, left = perfectLunge)
+        
+    canvas = agg.FigureCanvasAgg(fig)
+    canvas.draw()
+    renderer = canvas.get_renderer()
+    raw_data = renderer.tostring_rgb()
+    size = canvas.get_width_height()
+    surf = pygame.image.fromstring(raw_data, size, "RGB")
+    d.screen.blit(surf, (int(d.WINDOW_WIDTH * 0.1), int(d.WINDOW_HEIGHT*0.45)))
+    
+    drawSummaryGraphInfo(d)
+
 def drawHistorySummary(d):
     if(d.newScreen):
         d.screen.fill(color.white)
-
-        titleStr = "Workout History"
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.1))
-        titleText = Text(titleStr,textLoc,60,color.black,topmode=False)
-        titleText.draw(d)
-
-        workoutStr = "Workout on "+ d.workout[2]
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.18))
-        workoutText = Text(workoutStr,textLoc,30,color.black,topmode=False)
-        workoutText.draw(d)
-
-        focusStr = "Focus: "+ d.workout[0]
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.23))
-        focusText = Text(focusStr,textLoc,30,color.black,topmode=False)
-        focusText.draw(d)
-
-        durationStr = "Duration: "+ str(d.workout[1])
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.28))
-        durationText = Text(durationStr,textLoc,30,color.black,topmode=False)
-        durationText.draw(d)
-        
-        caloriesStr = "Calories Burned: "+'{0:.1f}'.format(d.workout[4])
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.33))
-        caloriesText = Text(caloriesStr,textLoc,30,color.black,topmode=False)
-        caloriesText.draw(d)
-
-        heartRateStr = "Average Heart Rate: "+'{0:.1f}'.format(d.workout[5])
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.38))
-        heartRateText = Text(heartRateStr,textLoc,30,color.black,topmode=False)
-        heartRateText.draw(d)
-
-        # Creating a bar graph of the pushups
-        # Params
-        green = "#47ff36"
-        red = "#ff3636"
-        perfectPushup = d.workout[7]
-        imperfectPushup = d.workout[8] - d.workout[7]
-        perfectLegRaise = d.workout[9]
-        imperfectLegRaise = d.workout[10] - d.workout[9]
-        perfectLunge = d.workout[11]
-        imperfectLunge = d.workout[12] - d.workout[11]
-        
-        my_dpi = 96
-        figure_height = (d.WINDOW_HEIGHT * 0.4)/my_dpi
-        figure_width = (d.WINDOW_WIDTH * 0.8)/my_dpi
-
-        plt.close("all")
-
-        fig = plt.figure(figsize=(figure_width, figure_height))
-
-        # Pushups
-        ax = fig.add_subplot(511)
-        ax.axis("off")
-        ax.barh("Pushup", perfectPushup, color = green)
-        ax.barh("Pushup", imperfectPushup, color = red, left = perfectPushup)
-
-        # Leg Raises    
-        ax = fig.add_subplot(513)
-        ax.axis("off")
-        ax.barh("Leg raises", perfectLegRaise, color = green)
-        ax.barh("Leg raises", imperfectLegRaise, color = red, left = perfectLegRaise)
-
-        # Lunges
-        ax = fig.add_subplot(515)
-        ax.axis("off")
-        ax.barh("Lunges", perfectLunge, color = green)
-        ax.barh("Lunges", imperfectLunge, color = red, left = perfectLunge)
-         
-        canvas = agg.FigureCanvasAgg(fig)
-        canvas.draw()
-        renderer = canvas.get_renderer()
-        raw_data = renderer.tostring_rgb()
-        size = canvas.get_width_height()
-        surf = pygame.image.fromstring(raw_data, size, "RGB")
-        d.screen.blit(surf, (int(d.WINDOW_WIDTH * 0.1), int(d.WINDOW_HEIGHT*0.45)))
-
-        # Drawing all of the text surrounding the graphs
-        pushupStr = "Pushups: "
-        textLoc = (int(d.WINDOW_WIDTH*0.07), int(d.WINDOW_HEIGHT*0.50))
-        pushupText = Text(pushupStr,textLoc,30,color.black,topmode=True)
-        pushupText.draw(d)
-
-        pushupValStr = '{0:.1f}'.format(perfectPushup * 100 / (perfectPushup + imperfectPushup)) + "% Perfect"
-        textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.50))
-        pushupValText = Text(pushupValStr,textLoc,30,color.black,topmode=True)
-        pushupValText.draw(d)
-
-        legRaiseStr = "Leg Raises: "
-        textLoc = (int(d.WINDOW_WIDTH*0.07), int(d.WINDOW_HEIGHT*0.635))
-        legRaiseText = Text(legRaiseStr,textLoc,30,color.black,topmode=True)
-        legRaiseText.draw(d)
-
-        legRaiseValStr = '{0:.1f}'.format(perfectLegRaise * 100 / (perfectLegRaise + imperfectLegRaise)) + "% Perfect"
-        textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.635))
-        legRaiseValText = Text(legRaiseValStr,textLoc,30,color.black,topmode=True)
-        legRaiseValText.draw(d)
-
-        lungeStr = "Lunges: "
-        textLoc = (int(d.WINDOW_WIDTH*0.07), int(d.WINDOW_HEIGHT*0.77))
-        lungeText = Text(lungeStr,textLoc,30,color.black,topmode=True)
-        lungeText.draw(d)
-
-        lungeValStr = '{0:.1f}'.format(perfectLunge * 100 / (perfectLunge + imperfectLunge)) + "% Perfect"
-        textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.77))
-        lungeValText = Text(lungeValStr,textLoc,30,color.black,topmode=True)
-        lungeValText.draw(d)
-
+        drawSummaryInfo(d)
+        drawSummaryGraph(d)
         drawScreenChangeButtons(d, screenMode.HISTORYOPTIONS, 0)
 
 def filterData(workouts):
