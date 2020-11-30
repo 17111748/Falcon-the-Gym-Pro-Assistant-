@@ -123,7 +123,7 @@ def initConstants(d):
 
 def initPyCamera(d):
     #setup pygame/camera
-    d.camera  = cv2.VideoCapture(0)
+    d.camera  = cv2.VideoCapture(1)
     # d.camera = cv2.VideoCapture(1)
     if not d.camera.isOpened():
         print("Could not open video device")
@@ -602,10 +602,12 @@ def drawScreenChangeButtons(d, previousScreen, dataLength):
 
         # Left button
         x = int(d.WINDOW_WIDTH * 0.1)
-        y = int(d.WINDOW_HEIGHT * 0.5)
+        y = int(d.WINDOW_HEIGHT * 0.6)
+        w = int(d.WINDOW_HEIGHT * 0.1)
+        h = int(d.WINDOW_HEIGHT * 0.1)
 
-        normalLeft = os.path.join("UI","images","icons","back_og.png")
-        highlightedLeft = os.path.join("UI","images","icons","back_highlighted.png")
+        normalLeft = os.path.join("UI","images","icons","left_og.png")
+        highlightedLeft = os.path.join("UI","images","icons","left_highlighted.png")
         leftButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalLeft, highlightedImg = highlightedLeft)
         currTime = pygame.time.get_ticks()
         if(leftButton.handle_mouse() and currTime - d.screenChangeTime > 250):
@@ -617,7 +619,7 @@ def drawScreenChangeButtons(d, previousScreen, dataLength):
 
         # Right button
         x = int(d.WINDOW_WIDTH * 0.9)
-        y = int(d.WINDOW_HEIGHT * 0.5)
+        y = int(d.WINDOW_HEIGHT * 0.6)
 
         normalRight = os.path.join("UI","images","icons","right_og.png")
         highlightedRight = os.path.join("UI","images","icons","right_highlighted.png")
