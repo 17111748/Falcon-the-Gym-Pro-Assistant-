@@ -11,17 +11,19 @@ redirect_uri='http://localhost:8888/callback')
 sp = spotipy.Spotify(auth=token)
 
 devices = sp.devices()['devices']
-print(devices)
 device_id = None
 for i in range(len(devices)):
     if(devices[i]['is_active']):
         device_id = devices[i]['id']
 
+if device_id == None and len(devices) != 0:
+    device_id = devices[0]['id']
+
 if device_id != None:
-    try:
-        sp.start_playback(device_id)
-    except:
+    if(sp.current_playback()['is_playing']):
         sp.pause_playback(device_id)
+    else:
+        sp.start_playback(device_id)
 else:
     print("Nothing playing!")
 
