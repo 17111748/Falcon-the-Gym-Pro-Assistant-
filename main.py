@@ -708,7 +708,10 @@ def drawSummaryGraphInfo(d):
     pushupText = Text(pushupStr,textLoc,30,color.black,topmode=True)
     pushupText.draw(d)
 
-    pushupValStr = '{0:.1f}'.format(perfectPushup * 100 / (perfectPushup + imperfectPushup)) + "% Perfect"
+    if (perfectPushup + imperfectPushup) != 0:
+        pushupValStr = '{0:.1f}'.format(perfectPushup * 100 / (perfectPushup + imperfectPushup)) + "% Perfect"
+    else:
+        pushupValStr = '{0:.1f}'.format(0) + "% Perfect"
     textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.50))
     pushupValText = Text(pushupValStr,textLoc,30,color.black,topmode=True)
     pushupValText.draw(d)
@@ -718,7 +721,10 @@ def drawSummaryGraphInfo(d):
     legRaiseText = Text(legRaiseStr,textLoc,30,color.black,topmode=True)
     legRaiseText.draw(d)
 
-    legRaiseValStr = '{0:.1f}'.format(perfectLegRaise * 100 / (perfectLegRaise + imperfectLegRaise)) + "% Perfect"
+    if (perfectLegRaise + imperfectLegRaise) != 0:
+        legRaiseValStr = '{0:.1f}'.format(perfectLegRaise * 100 / (perfectLegRaise + imperfectLegRaise)) + "% Perfect"
+    else:
+        legRaiseValStr = '{0:.1f}'.format(0) + "% Perfect"
     textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.635))
     legRaiseValText = Text(legRaiseValStr,textLoc,30,color.black,topmode=True)
     legRaiseValText.draw(d)
@@ -728,7 +734,10 @@ def drawSummaryGraphInfo(d):
     lungeText = Text(lungeStr,textLoc,30,color.black,topmode=True)
     lungeText.draw(d)
 
-    lungeValStr = '{0:.1f}'.format(perfectLunge * 100 / (perfectLunge + imperfectLunge)) + "% Perfect"
+    if (perfectLunge + imperfectLunge) != 0:
+        lungeValStr = '{0:.1f}'.format(perfectLunge * 100 / (perfectLunge + imperfectLunge)) + "% Perfect"
+    else:
+        lungeValStr = '{0:.1f}'.format(0) + "% Perfect"
     textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.77))
     lungeValText = Text(lungeValStr,textLoc,30,color.black,topmode=True)
     lungeValText.draw(d)
@@ -739,10 +748,18 @@ def drawSummaryGraph(d):
     red = "#ff3636"
     perfectPushup = d.workout[7]
     imperfectPushup = d.workout[8] - d.workout[7]
+    if perfectPushup == 0:
+        imperfectPushup = 1
+
     perfectLegRaise = d.workout[9]
     imperfectLegRaise = d.workout[10] - d.workout[9]
+    if perfectLegRaise == 0:
+        imperfectLegRaise = 1
+
     perfectLunge = d.workout[11]
     imperfectLunge = d.workout[12] - d.workout[11]
+    if perfectLunge == 0:
+        imperfectLunge = 1
     
     my_dpi = 96
     figure_height = (d.WINDOW_HEIGHT * 0.4)/my_dpi
@@ -847,9 +864,21 @@ def drawHistoryTrends(d):
         for date in dates:
             sessions.append(date)
             summary = data[date]
-            perfectPushup.append(summary["perfPush"] / summary["totalPush"] * 100)
-            perfectLegRaise.append(summary["perfRaise"] / summary["totalRaise"] * 100)
-            perfectLunge.append(summary["perfLunge"] / summary["totalLunge"] * 100)
+            
+            if summary["totalPush"] != 0:
+                perfectPushup.append(summary["perfPush"] / summary["totalPush"] * 100)
+            else:
+                perfectPushup.append(0)
+            
+            if summary["totalRaise"] != 0:
+                perfectLegRaise.append(summary["perfRaise"] / summary["totalRaise"] * 100)
+            else:
+                perfectLegRaise.append(0)
+            
+            if summary["totalLunge"] != 0:
+                perfectLunge.append(summary["perfLunge"] / summary["totalLunge"] * 100)
+            else:
+                perfectLunge.append(0)
 
         push, = ax.plot(sessions, perfectPushup, label="Perfect Pushups", color="blue")
         ax.scatter(sessions, perfectPushup, label="Perfect Pushups", color="blue")
