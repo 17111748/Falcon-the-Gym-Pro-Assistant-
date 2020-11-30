@@ -33,7 +33,7 @@ class Text(object):
 
 class Button(object):
     #initializes button
-    def __init__(self, x, y, w, h, col, text, textSize = 32, info = None):
+    def __init__(self, x, y, w, h, col, text, textSize = 32, info = None, transText=False):
         self.x = x-w/2
         self.y = y-h/2
         self.highlight = False
@@ -44,6 +44,7 @@ class Button(object):
         self.text = text
         self.textLoc = (x,y)
         self.info = info
+        self.transText = transText
 
     def handle_mouse(self):
         #wait so that code doesnt mess up
@@ -66,10 +67,10 @@ class Button(object):
         tempText = None
         if(self.highlight==False):
             pygame.draw.rect(d.screen, self.color,self.rect, 2, border_radius=10)
-            tempText = Text(self.text,self.textLoc,self.textSize, color.black)
+            tempText = Text(self.text,self.textLoc,self.textSize, color.black, transparent=self.transText)
         else:
             pygame.draw.rect(d.screen, self.color, self.rect,width=4,border_radius=10)
-            tempText = Text(self.text,self.textLoc,self.textSize+2, color.black)
+            tempText = Text(self.text,self.textLoc,self.textSize+2, color.black, transparent=self.transText)
 
         tempText.draw(d)
 
