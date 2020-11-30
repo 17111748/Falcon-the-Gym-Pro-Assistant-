@@ -19,12 +19,17 @@ for i in range(len(devices)):
 if device_id == None and len(devices) != 0:
     device_id = devices[0]['id']
 
-if device_id != None:
-    if(sp.current_playback()['is_playing']):
-        sp.pause_playback(device_id)
-    else:
-        sp.start_playback(device_id)
-else:
-    print("Nothing playing!")
+print(sp.current_user_playing_track()['item']['name']) # Name of the currently playing song
+
+sp.previous_track(device_id)
+# sp.next_track(device_id)
+
+# if device_id != None:
+#     if(sp.current_playback()['is_playing']):
+#         sp.pause_playback(device_id)
+#     else:
+#         sp.start_playback(device_id)
+# else:
+#     print("Nothing playing!")
 
 # print(sp.current_playback())
