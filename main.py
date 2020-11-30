@@ -54,7 +54,6 @@ def sendPicture(d,workout):
 
     new_image = original_image.resize((resized_col, resized_row))
     converted_image = new_image.convert('HSV')
-    # converted_pixel = converted_image.load()
     workout_key = "l" if (workout=="l_l" or workout=="l_r") else workout
     byte_arr = d.UART_WORKOUT_KEY[workout_key]+converted_image.tobytes()
 
@@ -89,6 +88,9 @@ def sendPicture(d,workout):
         feedback = d.pushupAnalyzer.getResult()
     if(len(feedback)==0):
         d.workoutPerfectCount[workout_key]+=1
+
+    print(feedback)
+
     d.workoutPerfectCount[workout_key+"_total"]+=1
     d.threadQueue.put(feedback)
 
@@ -120,10 +122,11 @@ def initConstants(d):
         "u": b'\x01',
         "c": b'\x02' 
     }
+    d.feedbackAudioVolume = 1.0
 
 def initPyCamera(d):
     #setup pygame/camera
-    d.camera  = cv2.VideoCapture(1)
+    d.camera  = cv2.VideoCapture(0)
     # d.camera = cv2.VideoCapture(1)
     if not d.camera.isOpened():
         print("Could not open video device")
@@ -132,6 +135,9 @@ def initPyCamera(d):
     d.screen = pygame.display.set_mode([d.WINDOW_WIDTH, d.WINDOW_HEIGHT])
     d.live_video = pygame.Surface(d.LIVE_VIDEO_DIMS)
     d.clock = pygame.time.Clock()
+    
+    pygame.mixer.init()
+    pygame.mixer.music.set_volume(d.feedbackAudioVolume)
 
 def initFrames(d):
     d.workoutTotalFrames = {
@@ -156,7 +162,7 @@ def initFrames(d):
     }
 
 def initNewWorkout(d):
-    d.currSet = 4
+    d.currSet = 1
     d.calBurned = 0 
     d.avgHR = 0
     d.currWorkoutFrame = 0
@@ -190,7 +196,7 @@ def initWorkouts(d):
         "l_l": "Lunge (Left Forward)   ",
         "u": "Push-Up"
     }
-    d.workoutFocus = "leg"
+    d.workoutFocus = "core"
 
     d.workoutHRR = {
         "rest": 0.1,
@@ -205,7 +211,6 @@ def initWorkouts(d):
         "u": 7.55
     }
 
-    d.currentScreen = screenMode.HISTORYOPTIONS
     d.newScreen = True
 
     d.breakTime = d.SET_BREAK_TIME
@@ -252,6 +257,7 @@ def initSummary(d):
     d.mainButton = Button(x,y,w,h,color.black,"Main Menu",textSize=32)
 
 def init(d):
+    d.currentScreen = screenMode.WORKOUT
     initConstants(d)
     initPyCamera(d)
     initFrames(d)
@@ -373,14 +379,23 @@ def drawWorkout(d):
             d.workoutStopwatch.start()
             d.beginWorkoutTime = datetime.datetime.now()
         # test threading
-        if(not data.threadQueue.empty()):
-            feedback = data.threadQueue.get()
+        if(not d.threadQueue.empty()):
+            feedbackAudio = os.path.join("audioFiles","perfect.mp3")
+            feedback = d.threadQueue.get()
             if(len(feedback)>0):
+                #if some feedback is not tuple with audio then just take feedback
                 d.displayFeedback = feedback[0]
+                if(not isinstance(d.displayFeedback,str)):
+                    d.displayFeedback = feedback[0][0]
+                    feedbackAudio = feedback[0][1]
             else:
                 d.displayFeedback = "Perfect Rep!"
             d.feedbackStopwatch.reset()
             d.feedbackStopwatch.start()
+
+            pygame.mixer.music.load(feedbackAudio)
+            pygame.mixer.music.play()
+
         currentWorkout = d.workoutSets[d.workoutFocus][d.currSet-1]
         timeTextResumePause = True
         if(d.newScreen):
@@ -563,74 +578,72 @@ def drawSummary(d):
     #handle mouse
     clicked = d.mainButton.handle_mouse()
     d.mainButton.draw(d)
-    print(d.mainButton.highlight)
     if(clicked):
         d.newScreen = True
         d.currentScreen = screenMode.MAIN
 
 # Set dataLength to 0 if dont want the navigation buttons to show up
 def drawScreenChangeButtons(d, previousScreen, dataLength):
-        
-        # Back button
-        x = int(d.WINDOW_WIDTH * 0.1)
-        y = int(d.WINDOW_HEIGHT * 0.1)
-        w = int(d.WINDOW_HEIGHT * 0.13)
-        h = int(d.WINDOW_HEIGHT * 0.13)
+    # Back button
+    x = int(d.WINDOW_WIDTH * 0.1)
+    y = int(d.WINDOW_HEIGHT * 0.1)
+    w = int(d.WINDOW_HEIGHT * 0.13)
+    h = int(d.WINDOW_HEIGHT * 0.13)
 
-        normalBack = os.path.join("UI","images","icons","back_og.png")
-        highlightedBack = os.path.join("UI","images","icons","back_highlighted.png")
-        backButton = ImageButton(x, y, w, h, color.black, "back", normalImg = normalBack, highlightedImg = highlightedBack)
-        currTime = pygame.time.get_ticks()
-        if(backButton.handle_mouse() and currTime - d.screenChangeTime > 250):
-            d.newScreen = True
-            d.currentScreen = previousScreen
-            d.screenChangeTime = pygame.time.get_ticks()
-            d.pageNum = 0
-        backButton.draw(d)
+    normalBack = os.path.join("UI","images","icons","back_og.png")
+    highlightedBack = os.path.join("UI","images","icons","back_highlighted.png")
+    backButton = ImageButton(x, y, w, h, color.black, "back", normalImg = normalBack, highlightedImg = highlightedBack)
+    currTime = pygame.time.get_ticks()
+    if(backButton.handle_mouse() and currTime - d.screenChangeTime > 250):
+        d.newScreen = True
+        d.currentScreen = previousScreen
+        d.screenChangeTime = pygame.time.get_ticks()
+        d.pageNum = 0
+    backButton.draw(d)
 
-        # Trends button
-        x = int(d.WINDOW_WIDTH * 0.9)
+    # Trends button
+    x = int(d.WINDOW_WIDTH * 0.9)
 
-        normalTrends = os.path.join("UI","images","icons","trends_og.png")
-        highlightedTrends = os.path.join("UI","images","icons","trends_highlighted.png")
-        trendsButton = ImageButton(x, y, w, h, color.black, "back", normalImg = normalTrends, highlightedImg = highlightedTrends)
-        if(trendsButton.handle_mouse()):
-            d.newScreen = True
-            d.currentScreen = screenMode.HISTORYTRENDS
-            d.pageNum = 0
-        trendsButton.draw(d)
+    normalTrends = os.path.join("UI","images","icons","trends_og.png")
+    highlightedTrends = os.path.join("UI","images","icons","trends_highlighted.png")
+    trendsButton = ImageButton(x, y, w, h, color.black, "back", normalImg = normalTrends, highlightedImg = highlightedTrends)
+    if(trendsButton.handle_mouse()):
+        d.newScreen = True
+        d.currentScreen = screenMode.HISTORYTRENDS
+        d.pageNum = 0
+    trendsButton.draw(d)
 
-        # Left button
-        x = int(d.WINDOW_WIDTH * 0.1)
-        y = int(d.WINDOW_HEIGHT * 0.6)
-        w = int(d.WINDOW_HEIGHT * 0.1)
-        h = int(d.WINDOW_HEIGHT * 0.1)
+    # Left button
+    x = int(d.WINDOW_WIDTH * 0.1)
+    y = int(d.WINDOW_HEIGHT * 0.6)
+    w = int(d.WINDOW_HEIGHT * 0.1)
+    h = int(d.WINDOW_HEIGHT * 0.1)
 
-        normalLeft = os.path.join("UI","images","icons","left_og.png")
-        highlightedLeft = os.path.join("UI","images","icons","left_highlighted.png")
-        leftButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalLeft, highlightedImg = highlightedLeft)
-        currTime = pygame.time.get_ticks()
-        if(leftButton.handle_mouse() and currTime - d.screenChangeTime > 250):
-            if dataLength - (5 * (d.pageNum + 1)) > 0:
-                d.pageNum += 1
-            d.screenChangeTime = pygame.time.get_ticks()
+    normalLeft = os.path.join("UI","images","icons","left_og.png")
+    highlightedLeft = os.path.join("UI","images","icons","left_highlighted.png")
+    leftButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalLeft, highlightedImg = highlightedLeft)
+    currTime = pygame.time.get_ticks()
+    if(leftButton.handle_mouse() and currTime - d.screenChangeTime > 250):
         if dataLength - (5 * (d.pageNum + 1)) > 0:
-            leftButton.draw(d)
+            d.pageNum += 1
+        d.screenChangeTime = pygame.time.get_ticks()
+    if dataLength - (5 * (d.pageNum + 1)) > 0:
+        leftButton.draw(d)
 
-        # Right button
-        x = int(d.WINDOW_WIDTH * 0.9)
-        y = int(d.WINDOW_HEIGHT * 0.6)
+    # Right button
+    x = int(d.WINDOW_WIDTH * 0.9)
+    y = int(d.WINDOW_HEIGHT * 0.6)
 
-        normalRight = os.path.join("UI","images","icons","right_og.png")
-        highlightedRight = os.path.join("UI","images","icons","right_highlighted.png")
-        rightButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalRight, highlightedImg = highlightedRight)
-        currTime = pygame.time.get_ticks()
-        if(rightButton.handle_mouse() and currTime - d.screenChangeTime > 250):
-            if d.pageNum > 0:
-                d.pageNum -= 1
-            d.screenChangeTime = pygame.time.get_ticks()
+    normalRight = os.path.join("UI","images","icons","right_og.png")
+    highlightedRight = os.path.join("UI","images","icons","right_highlighted.png")
+    rightButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalRight, highlightedImg = highlightedRight)
+    currTime = pygame.time.get_ticks()
+    if(rightButton.handle_mouse() and currTime - d.screenChangeTime > 250):
         if d.pageNum > 0:
-            rightButton.draw(d)
+            d.pageNum -= 1
+        d.screenChangeTime = pygame.time.get_ticks()
+    if d.pageNum > 0:
+        rightButton.draw(d)
 
 def drawHistoryOptions(d):
     if(d.newScreen):
@@ -696,7 +709,6 @@ def drawSummaryInfo(d):
     heartRateText.draw(d)
 
 def drawSummaryGraphInfo(d):
-
     # Params
     perfectPushup = d.workout[7]
     imperfectPushup = d.workout[8] - d.workout[7]
