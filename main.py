@@ -54,7 +54,6 @@ def sendPicture(d,workout):
 
     new_image = original_image.resize((resized_col, resized_row))
     converted_image = new_image.convert('HSV')
-    # converted_pixel = converted_image.load()
     workout_key = "l" if (workout=="l_l" or workout=="l_r") else workout
     byte_arr = d.UART_WORKOUT_KEY[workout_key]+converted_image.tobytes()
 
@@ -89,6 +88,9 @@ def sendPicture(d,workout):
         feedback = d.pushupAnalyzer.getResult()
     if(len(feedback)==0):
         d.workoutPerfectCount[workout_key]+=1
+
+    print(feedback)
+
     d.workoutPerfectCount[workout_key+"_total"]+=1
     d.threadQueue.put(feedback)
 
@@ -110,8 +112,8 @@ def initConstants(d):
        "u": os.path.join("UI", "images", "push_up", "")
     }
     d.REPS_PER_SET = 1
-    d.SETS_PER_WORKOUT = 4
-    d.SET_BREAK_TIME = 1
+    d.SETS_PER_WORKOUT = 1
+    d.SET_BREAK_TIME = 3
     d.RESUME_TIME = 3
     #about 2s at 0.04s per rep
     d.END_SET_FRAME_COUNT = 50
@@ -120,6 +122,8 @@ def initConstants(d):
         "u": b'\x01',
         "c": b'\x02' 
     }
+    d.feedbackAudioVolume = 1.0
+    d.changeScreensDelay = 250
 
 def initPyCamera(d):
     #setup pygame/camera
@@ -132,6 +136,9 @@ def initPyCamera(d):
     d.screen = pygame.display.set_mode([d.WINDOW_WIDTH, d.WINDOW_HEIGHT])
     d.live_video = pygame.Surface(d.LIVE_VIDEO_DIMS)
     d.clock = pygame.time.Clock()
+    
+    pygame.mixer.init()
+    pygame.mixer.music.set_volume(d.feedbackAudioVolume)
 
 def initFrames(d):
     d.workoutTotalFrames = {
@@ -156,7 +163,7 @@ def initFrames(d):
     }
 
 def initNewWorkout(d):
-    d.currSet = 4
+    d.currSet = 1
     d.calBurned = 0 
     d.avgHR = 0
     d.currWorkoutFrame = 0
@@ -190,7 +197,7 @@ def initWorkouts(d):
         "l_l": "Lunge (Left Forward)   ",
         "u": "Push-Up"
     }
-    d.workoutFocus = "leg"
+    d.workoutFocus = "core"
 
     d.workoutHRR = {
         "rest": 0.1,
@@ -205,7 +212,6 @@ def initWorkouts(d):
         "u": 7.55
     }
 
-    d.currentScreen = screenMode.HISTORYOPTIONS
     d.newScreen = True
 
     d.breakTime = d.SET_BREAK_TIME
@@ -249,9 +255,10 @@ def initHistory(d):
 def initSummary(d):
     x,y = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.75))
     w,h =  (int(d.WINDOW_WIDTH*.2),int(d.WINDOW_HEIGHT*0.1))
-    d.mainButton = Button(x,y,w,h,color.black,"Main Menu",textSize=32)
+    d.summaryMainButton = Button(x,y,w,h,color.black,"Main Menu",textSize=32)
 
 def init(d):
+    d.currentScreen = screenMode.WORKOUT
     initConstants(d)
     initPyCamera(d)
     initFrames(d)
@@ -373,14 +380,23 @@ def drawWorkout(d):
             d.workoutStopwatch.start()
             d.beginWorkoutTime = datetime.datetime.now()
         # test threading
-        if(not data.threadQueue.empty()):
-            feedback = data.threadQueue.get()
+        if(not d.threadQueue.empty()):
+            feedbackAudio = os.path.join("audioFiles","perfect.mp3")
+            feedback = d.threadQueue.get()
             if(len(feedback)>0):
+                #if some feedback is not tuple with audio then just take feedback
                 d.displayFeedback = feedback[0]
+                if(not isinstance(d.displayFeedback,str)):
+                    d.displayFeedback = feedback[0][0]
+                    feedbackAudio = feedback[0][1]
             else:
                 d.displayFeedback = "Perfect Rep!"
             d.feedbackStopwatch.reset()
             d.feedbackStopwatch.start()
+
+            pygame.mixer.music.load(feedbackAudio)
+            pygame.mixer.music.play()
+
         currentWorkout = d.workoutSets[d.workoutFocus][d.currSet-1]
         timeTextResumePause = True
         if(d.newScreen):
@@ -433,7 +449,6 @@ def drawWorkout(d):
             flippedFrame = cv2.flip(toDownsize,1)
 
             cv2.imwrite(d.CAPTURE_IMAGE,flippedFrame)
-            print('photo captured')
             imCurrentWorkout = currentWorkout
             if(currentWorkout=="l"):
                 imCurrentWorkout = "l_r" if (d.currentRep%2==1) else "l_l"
@@ -561,74 +576,77 @@ def drawSummary(d):
     d.newScreen = False
 
     #handle mouse
-    clicked = d.mainButton.handle_mouse()
-    d.mainButton.draw(d)
-    print(d.mainButton.highlight)
-    if(clicked):
+    clicked = d.summaryMainButton.handle_mouse()
+    d.summaryMainButton.draw(d)
+    if(clicked and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
         d.newScreen = True
         d.currentScreen = screenMode.MAIN
+        d.screenChangeTime = pygame.time.get_ticks()
+
 
 # Set dataLength to 0 if dont want the navigation buttons to show up
 def drawScreenChangeButtons(d, previousScreen, dataLength):
-        
-        # Back button
-        x = int(d.WINDOW_WIDTH * 0.1)
-        y = int(d.WINDOW_HEIGHT * 0.1)
-        w = int(d.WINDOW_HEIGHT * 0.13)
-        h = int(d.WINDOW_HEIGHT * 0.13)
+    # Back button
+    x = int(d.WINDOW_WIDTH * 0.1)
+    y = int(d.WINDOW_HEIGHT * 0.1)
+    w = int(d.WINDOW_HEIGHT * 0.13)
+    h = int(d.WINDOW_HEIGHT * 0.13)
 
-        normalBack = os.path.join("UI","images","icons","back_og.png")
-        highlightedBack = os.path.join("UI","images","icons","back_highlighted.png")
-        backButton = ImageButton(x, y, w, h, color.black, "back", normalImg = normalBack, highlightedImg = highlightedBack)
-        currTime = pygame.time.get_ticks()
-        if(backButton.handle_mouse() and currTime - d.screenChangeTime > 250):
-            d.newScreen = True
-            d.currentScreen = previousScreen
-            d.screenChangeTime = pygame.time.get_ticks()
-            d.pageNum = 0
-        backButton.draw(d)
+    normalBack = os.path.join("UI","images","icons","back_og.png")
+    highlightedBack = os.path.join("UI","images","icons","back_highlighted.png")
+    backButton = ImageButton(x, y, w, h, color.black, "back", normalImg = normalBack, highlightedImg = highlightedBack)
+    currTime = pygame.time.get_ticks()
+    if(backButton.handle_mouse() and currTime - d.screenChangeTime > d.changeScreensDelay):
+        d.newScreen = True
+        d.currentScreen = previousScreen
+        d.screenChangeTime = pygame.time.get_ticks()
+        d.pageNum = 0
+    backButton.draw(d)
 
-        # Trends button
-        x = int(d.WINDOW_WIDTH * 0.9)
+    # Trends button
+    x = int(d.WINDOW_WIDTH * 0.9)
 
-        normalTrends = os.path.join("UI","images","icons","trends_og.png")
-        highlightedTrends = os.path.join("UI","images","icons","trends_highlighted.png")
-        trendsButton = ImageButton(x, y, w, h, color.black, "back", normalImg = normalTrends, highlightedImg = highlightedTrends)
-        if(trendsButton.handle_mouse()):
-            d.newScreen = True
-            d.currentScreen = screenMode.HISTORYTRENDS
-            d.pageNum = 0
-        trendsButton.draw(d)
+    normalTrends = os.path.join("UI","images","icons","trends_og.png")
+    highlightedTrends = os.path.join("UI","images","icons","trends_highlighted.png")
+    trendsButton = ImageButton(x, y, w, h, color.black, "back", normalImg = normalTrends, highlightedImg = highlightedTrends)
+    if(trendsButton.handle_mouse() and currTime - d.screenChangeTime > d.changeScreensDelay):
+        d.newScreen = True
+        d.currentScreen = screenMode.HISTORYTRENDS
+        d.screenChangeTime = pygame.time.get_ticks()
+        d.pageNum = 0
+    trendsButton.draw(d)
 
-        # Left button
-        x = int(d.WINDOW_WIDTH * 0.1)
-        y = int(d.WINDOW_HEIGHT * 0.5)
+    # Left button
+    x = int(d.WINDOW_WIDTH * 0.1)
+    y = int(d.WINDOW_HEIGHT * 0.6)
+    w = int(d.WINDOW_HEIGHT * 0.1)
+    h = int(d.WINDOW_HEIGHT * 0.1)
 
-        normalLeft = os.path.join("UI","images","icons","back_og.png")
-        highlightedLeft = os.path.join("UI","images","icons","back_highlighted.png")
-        leftButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalLeft, highlightedImg = highlightedLeft)
-        currTime = pygame.time.get_ticks()
-        if(leftButton.handle_mouse() and currTime - d.screenChangeTime > 250):
-            if dataLength - (5 * (d.pageNum + 1)) > 0:
-                d.pageNum += 1
-            d.screenChangeTime = pygame.time.get_ticks()
+    normalLeft = os.path.join("UI","images","icons","left_og.png")
+    highlightedLeft = os.path.join("UI","images","icons","left_highlighted.png")
+    leftButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalLeft, highlightedImg = highlightedLeft)
+    currTime = pygame.time.get_ticks()
+    if(leftButton.handle_mouse() and currTime - d.screenChangeTime > d.changeScreensDelay):
         if dataLength - (5 * (d.pageNum + 1)) > 0:
-            leftButton.draw(d)
+            d.pageNum += 1
+        d.screenChangeTime = pygame.time.get_ticks()
+    if dataLength - (5 * (d.pageNum + 1)) > 0:
+        leftButton.draw(d)
 
-        # Right button
-        x = int(d.WINDOW_WIDTH * 0.9)
-        y = int(d.WINDOW_HEIGHT * 0.5)
+    # Right button
+    x = int(d.WINDOW_WIDTH * 0.9)
+    y = int(d.WINDOW_HEIGHT * 0.6)
 
-        normalRight = os.path.join("UI","images","icons","right_og.png")
-        highlightedRight = os.path.join("UI","images","icons","right_highlighted.png")
-        rightButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalRight, highlightedImg = highlightedRight)
-        currTime = pygame.time.get_ticks()
-        if(rightButton.handle_mouse() and currTime - d.screenChangeTime > 250):
-            if d.pageNum > 0:
-                d.pageNum -= 1
-            d.screenChangeTime = pygame.time.get_ticks()
+    normalRight = os.path.join("UI","images","icons","right_og.png")
+    highlightedRight = os.path.join("UI","images","icons","right_highlighted.png")
+    rightButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalRight, highlightedImg = highlightedRight)
+    currTime = pygame.time.get_ticks()
+    if(rightButton.handle_mouse() and currTime - d.screenChangeTime > d.changeScreensDelay):
         if d.pageNum > 0:
-            rightButton.draw(d)
+            d.pageNum -= 1
+        d.screenChangeTime = pygame.time.get_ticks()
+    if d.pageNum > 0:
+        rightButton.draw(d)
 
 def drawHistoryOptions(d):
     if(d.newScreen):
@@ -654,125 +672,154 @@ def drawHistoryOptions(d):
             workout = data[len(data)-i-1]
             optionStr = workout[2]
             option = Button(int(d.WINDOW_WIDTH * 0.5), int(d.WINDOW_HEIGHT * 0.35 + 100 * i), int(0.6 * d.WINDOW_WIDTH), 50, color.black, optionStr, info = workout)
-            if(option.handle_mouse()):  
+            if(option.handle_mouse() and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):  
                 d.currentScreen = screenMode.HISTORYSUMMARY
+                d.screenChangeTime = pygame.time.get_ticks()
                 d.workout = workout
                 d.pageNum = 0
             option.draw(d)
         
         drawScreenChangeButtons(d, screenMode.MAIN, len(allData))
 
-def drawHistorySummary(d):
-    if(d.newScreen):
-        d.screen.fill(color.white)
+def drawSummaryInfo(d):
+    titleStr = "Workout History"
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.1))
+    titleText = Text(titleStr,textLoc,60,color.black,topmode=False)
+    titleText.draw(d)
 
-        titleStr = "Workout History"
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.1))
-        titleText = Text(titleStr,textLoc,60,color.black,topmode=False)
-        titleText.draw(d)
+    workoutStr = "Workout on "+ d.workout[2]
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.18))
+    workoutText = Text(workoutStr,textLoc,30,color.black,topmode=False)
+    workoutText.draw(d)
 
-        workoutStr = "Workout on "+ d.workout[2]
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.18))
-        workoutText = Text(workoutStr,textLoc,30,color.black,topmode=False)
-        workoutText.draw(d)
+    focusStr = "Focus: "+ d.workout[0]
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.23))
+    focusText = Text(focusStr,textLoc,30,color.black,topmode=False)
+    focusText.draw(d)
 
-        focusStr = "Focus: "+ d.workout[0]
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.23))
-        focusText = Text(focusStr,textLoc,30,color.black,topmode=False)
-        focusText.draw(d)
+    durationStr = "Duration: "+ str(d.workout[1])
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.28))
+    durationText = Text(durationStr,textLoc,30,color.black,topmode=False)
+    durationText.draw(d)
+    
+    caloriesStr = "Calories Burned: "+'{0:.1f}'.format(d.workout[4])
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.33))
+    caloriesText = Text(caloriesStr,textLoc,30,color.black,topmode=False)
+    caloriesText.draw(d)
 
-        durationStr = "Duration: "+ str(d.workout[1])
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.28))
-        durationText = Text(durationStr,textLoc,30,color.black,topmode=False)
-        durationText.draw(d)
-        
-        caloriesStr = "Calories Burned: "+'{0:.1f}'.format(d.workout[4])
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.33))
-        caloriesText = Text(caloriesStr,textLoc,30,color.black,topmode=False)
-        caloriesText.draw(d)
+    heartRateStr = "Average Heart Rate: "+'{0:.1f}'.format(d.workout[5])
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.38))
+    heartRateText = Text(heartRateStr,textLoc,30,color.black,topmode=False)
+    heartRateText.draw(d)
 
-        heartRateStr = "Average Heart Rate: "+'{0:.1f}'.format(d.workout[5])
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.38))
-        heartRateText = Text(heartRateStr,textLoc,30,color.black,topmode=False)
-        heartRateText.draw(d)
+def drawSummaryGraphInfo(d):
+    # Params
+    perfectPushup = d.workout[7]
+    imperfectPushup = d.workout[8] - d.workout[7]
+    perfectLegRaise = d.workout[9]
+    imperfectLegRaise = d.workout[10] - d.workout[9]
+    perfectLunge = d.workout[11]
+    imperfectLunge = d.workout[12] - d.workout[11]
 
-        # Creating a bar graph of the pushups
-        # Params
-        green = "#47ff36"
-        red = "#ff3636"
-        perfectPushup = d.workout[7]
-        imperfectPushup = d.workout[8] - d.workout[7]
-        perfectLegRaise = d.workout[9]
-        imperfectLegRaise = d.workout[10] - d.workout[9]
-        perfectLunge = d.workout[11]
-        imperfectLunge = d.workout[12] - d.workout[11]
-        
-        my_dpi = 96
-        figure_height = (d.WINDOW_HEIGHT * 0.4)/my_dpi
-        figure_width = (d.WINDOW_WIDTH * 0.8)/my_dpi
+    pushupStr = "Pushups: "
+    textLoc = (int(d.WINDOW_WIDTH*0.07), int(d.WINDOW_HEIGHT*0.50))
+    pushupText = Text(pushupStr,textLoc,30,color.black,topmode=True)
+    pushupText.draw(d)
 
-        plt.close("all")
-
-        fig = plt.figure(figsize=(figure_width, figure_height))
-
-        # Pushups
-        ax = fig.add_subplot(511)
-        ax.axis("off")
-        ax.barh("Pushup", perfectPushup, color = green)
-        ax.barh("Pushup", imperfectPushup, color = red, left = perfectPushup)
-
-        # Leg Raises    
-        ax = fig.add_subplot(513)
-        ax.axis("off")
-        ax.barh("Leg raises", perfectLegRaise, color = green)
-        ax.barh("Leg raises", imperfectLegRaise, color = red, left = perfectLegRaise)
-
-        # Lunges
-        ax = fig.add_subplot(515)
-        ax.axis("off")
-        ax.barh("Lunges", perfectLunge, color = green)
-        ax.barh("Lunges", imperfectLunge, color = red, left = perfectLunge)
-         
-        canvas = agg.FigureCanvasAgg(fig)
-        canvas.draw()
-        renderer = canvas.get_renderer()
-        raw_data = renderer.tostring_rgb()
-        size = canvas.get_width_height()
-        surf = pygame.image.fromstring(raw_data, size, "RGB")
-        d.screen.blit(surf, (int(d.WINDOW_WIDTH * 0.1), int(d.WINDOW_HEIGHT*0.45)))
-
-        # Drawing all of the text surrounding the graphs
-        pushupStr = "Pushups: "
-        textLoc = (int(d.WINDOW_WIDTH*0.07), int(d.WINDOW_HEIGHT*0.50))
-        pushupText = Text(pushupStr,textLoc,30,color.black,topmode=True)
-        pushupText.draw(d)
-
+    if (perfectPushup + imperfectPushup) != 0:
         pushupValStr = '{0:.1f}'.format(perfectPushup * 100 / (perfectPushup + imperfectPushup)) + "% Perfect"
-        textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.50))
-        pushupValText = Text(pushupValStr,textLoc,30,color.black,topmode=True)
-        pushupValText.draw(d)
+    else:
+        pushupValStr = '{0:.1f}'.format(0) + "% Perfect"
+    textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.50))
+    pushupValText = Text(pushupValStr,textLoc,30,color.black,topmode=True)
+    pushupValText.draw(d)
 
-        legRaiseStr = "Leg Raises: "
-        textLoc = (int(d.WINDOW_WIDTH*0.07), int(d.WINDOW_HEIGHT*0.635))
-        legRaiseText = Text(legRaiseStr,textLoc,30,color.black,topmode=True)
-        legRaiseText.draw(d)
+    legRaiseStr = "Leg Raises: "
+    textLoc = (int(d.WINDOW_WIDTH*0.07), int(d.WINDOW_HEIGHT*0.635))
+    legRaiseText = Text(legRaiseStr,textLoc,30,color.black,topmode=True)
+    legRaiseText.draw(d)
 
+    if (perfectLegRaise + imperfectLegRaise) != 0:
         legRaiseValStr = '{0:.1f}'.format(perfectLegRaise * 100 / (perfectLegRaise + imperfectLegRaise)) + "% Perfect"
-        textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.635))
-        legRaiseValText = Text(legRaiseValStr,textLoc,30,color.black,topmode=True)
-        legRaiseValText.draw(d)
+    else:
+        legRaiseValStr = '{0:.1f}'.format(0) + "% Perfect"
+    textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.635))
+    legRaiseValText = Text(legRaiseValStr,textLoc,30,color.black,topmode=True)
+    legRaiseValText.draw(d)
 
-        lungeStr = "Lunges: "
-        textLoc = (int(d.WINDOW_WIDTH*0.07), int(d.WINDOW_HEIGHT*0.77))
-        lungeText = Text(lungeStr,textLoc,30,color.black,topmode=True)
-        lungeText.draw(d)
+    lungeStr = "Lunges: "
+    textLoc = (int(d.WINDOW_WIDTH*0.07), int(d.WINDOW_HEIGHT*0.77))
+    lungeText = Text(lungeStr,textLoc,30,color.black,topmode=True)
+    lungeText.draw(d)
 
+    if (perfectLunge + imperfectLunge) != 0:
         lungeValStr = '{0:.1f}'.format(perfectLunge * 100 / (perfectLunge + imperfectLunge)) + "% Perfect"
-        textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.77))
-        lungeValText = Text(lungeValStr,textLoc,30,color.black,topmode=True)
-        lungeValText.draw(d)
+    else:
+        lungeValStr = '{0:.1f}'.format(0) + "% Perfect"
+    textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.77))
+    lungeValText = Text(lungeValStr,textLoc,30,color.black,topmode=True)
+    lungeValText.draw(d)
 
-        drawScreenChangeButtons(d, screenMode.HISTORYOPTIONS, 0)
+def drawSummaryGraph(d):
+    # Params
+    green = "#47ff36"
+    red = "#ff3636"
+    perfectPushup = d.workout[7]
+    imperfectPushup = d.workout[8] - d.workout[7]
+    if perfectPushup == 0:
+        imperfectPushup = 1
+
+    perfectLegRaise = d.workout[9]
+    imperfectLegRaise = d.workout[10] - d.workout[9]
+    if perfectLegRaise == 0:
+        imperfectLegRaise = 1
+
+    perfectLunge = d.workout[11]
+    imperfectLunge = d.workout[12] - d.workout[11]
+    if perfectLunge == 0:
+        imperfectLunge = 1
+    
+    my_dpi = 96
+    figure_height = (d.WINDOW_HEIGHT * 0.4)/my_dpi
+    figure_width = (d.WINDOW_WIDTH * 0.8)/my_dpi
+
+    plt.close("all") # Closing graph before drawing a new one to prevent excess use of memory
+
+    fig = plt.figure(figsize=(figure_width, figure_height))
+
+    # Pushups
+    ax = fig.add_subplot(511)
+    ax.axis("off")
+    ax.barh("Pushup", perfectPushup, color = green)
+    ax.barh("Pushup", imperfectPushup, color = red, left = perfectPushup)
+
+    # Leg Raises    
+    ax = fig.add_subplot(513)
+    ax.axis("off")
+    ax.barh("Leg raises", perfectLegRaise, color = green)
+    ax.barh("Leg raises", imperfectLegRaise, color = red, left = perfectLegRaise)
+
+    # Lunges
+    ax = fig.add_subplot(515)
+    ax.axis("off")
+    ax.barh("Lunges", perfectLunge, color = green)
+    ax.barh("Lunges", imperfectLunge, color = red, left = perfectLunge)
+        
+    canvas = agg.FigureCanvasAgg(fig)
+    canvas.draw()
+    renderer = canvas.get_renderer()
+    raw_data = renderer.tostring_rgb()
+    size = canvas.get_width_height()
+    surf = pygame.image.fromstring(raw_data, size, "RGB")
+    d.screen.blit(surf, (int(d.WINDOW_WIDTH * 0.1), int(d.WINDOW_HEIGHT*0.45)))
+    
+    drawSummaryGraphInfo(d)
+
+def drawHistorySummary(d):
+    d.screen.fill(color.white)
+    drawSummaryInfo(d)
+    drawSummaryGraph(d)
+    drawScreenChangeButtons(d, screenMode.HISTORYOPTIONS, 0)
 
 def filterData(workouts):
     filteredData = dict()
@@ -796,69 +843,80 @@ def filterData(workouts):
     return filteredData
  
 def drawHistoryTrends(d):
-    if(d.newScreen):
-        d.screen.fill(color.white)
+    d.screen.fill(color.white)
 
-        titleStr = "Workout Trends"
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.1))
-        titleText = Text(titleStr,textLoc,60,color.black,topmode=False)
-        titleText.draw(d)
+    titleStr = "Workout Trends"
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.1))
+    titleText = Text(titleStr,textLoc,60,color.black,topmode=False)
+    titleText.draw(d)
 
-        data = d.db.getWorkouts(d.currProfile)
+    data = d.db.getWorkouts(d.currProfile)
 
-        my_dpi = 96
-        figure_height = (d.WINDOW_HEIGHT * 0.8)/my_dpi
-        figure_width = (d.WINDOW_WIDTH * 0.8)/my_dpi
+    my_dpi = 96
+    figure_height = (d.WINDOW_HEIGHT * 0.8)/my_dpi
+    figure_width = (d.WINDOW_WIDTH * 0.8)/my_dpi
+    
+    plt.close("all")
+
+    fig = plt.figure(figsize=(figure_width, figure_height))
+
+    ax = fig.add_subplot(111)
+    
+    # perfectPushup = [3, 4, 5, 6, 8]
+    # perfectLunge = [8, 1, 6, 2, 3]
+    # perfectLegRaise = [1, 9, 2, 3, 4]
+
+    data = d.db.getWorkouts(d.currProfile)
+    data = filterData(data)
+    perfectPushup = []
+    perfectLunge = []
+    perfectLegRaise = []
+    sessions = []
+    allDates = sorted(data.keys())
+    endIndex = len(allDates) - (d.pageNum * 5)
+    startIndex = max(0, endIndex  - 5)
+    dates = allDates[startIndex:endIndex]
+
+    for date in dates:
+        sessions.append(date)
+        summary = data[date]
         
-        plt.close("all")
-
-        fig = plt.figure(figsize=(figure_width, figure_height))
-
-        ax = fig.add_subplot(111)
-        
-        # perfectPushup = [3, 4, 5, 6, 8]
-        # perfectLunge = [8, 1, 6, 2, 3]
-        # perfectLegRaise = [1, 9, 2, 3, 4]
-
-        data = d.db.getWorkouts(d.currProfile)
-        data = filterData(data)
-        perfectPushup = []
-        perfectLunge = []
-        perfectLegRaise = []
-        sessions = []
-        allDates = sorted(data.keys())
-        endIndex = len(allDates) - (d.pageNum * 5)
-        startIndex = max(0, endIndex  - 5)
-        dates = allDates[startIndex:endIndex]
-
-        for date in dates:
-            sessions.append(date)
-            summary = data[date]
+        if summary["totalPush"] != 0:
             perfectPushup.append(summary["perfPush"] / summary["totalPush"] * 100)
+        else:
+            perfectPushup.append(0)
+        
+        if summary["totalRaise"] != 0:
             perfectLegRaise.append(summary["perfRaise"] / summary["totalRaise"] * 100)
+        else:
+            perfectLegRaise.append(0)
+        
+        if summary["totalLunge"] != 0:
             perfectLunge.append(summary["perfLunge"] / summary["totalLunge"] * 100)
+        else:
+            perfectLunge.append(0)
 
-        push, = ax.plot(sessions, perfectPushup, label="Perfect Pushups", color="blue")
-        ax.scatter(sessions, perfectPushup, label="Perfect Pushups", color="blue")
-        rais, = ax.plot(sessions, perfectLegRaise, label="Perfect Leg Raises", color="red")
-        ax.scatter(sessions, perfectLegRaise, label="Perfect Leg Raises", color="red")
-        lunge, = ax.plot(sessions, perfectLunge, label="Perfect Lunges", color="green")
-        ax.scatter(sessions, perfectLunge, label="Perfect Lunges", color="green")
+    push, = ax.plot(sessions, perfectPushup, label="Perfect Pushups", color="blue")
+    ax.scatter(sessions, perfectPushup, label="Perfect Pushups", color="blue")
+    rais, = ax.plot(sessions, perfectLegRaise, label="Perfect Leg Raises", color="red")
+    ax.scatter(sessions, perfectLegRaise, label="Perfect Leg Raises", color="red")
+    lunge, = ax.plot(sessions, perfectLunge, label="Perfect Lunges", color="green")
+    ax.scatter(sessions, perfectLunge, label="Perfect Lunges", color="green")
 
-        ax.legend([push, rais, lunge], ["Perfect Pushups", "Perfect Leg Raises", "Perfect Lunges"])
+    ax.legend([push, rais, lunge], ["Perfect Pushups", "Perfect Leg Raises", "Perfect Lunges"])
 
-        canvas = agg.FigureCanvasAgg(fig)
-        canvas.draw()
-        renderer = canvas.get_renderer()
-        raw_data = renderer.tostring_rgb()
-        size = canvas.get_width_height()
-        surf = pygame.image.fromstring(raw_data, size, "RGB")
-        d.screen.blit(surf, (int(d.WINDOW_WIDTH * 0.1), int(d.WINDOW_HEIGHT*0.18)))
+    canvas = agg.FigureCanvasAgg(fig)
+    canvas.draw()
+    renderer = canvas.get_renderer()
+    raw_data = renderer.tostring_rgb()
+    size = canvas.get_width_height()
+    surf = pygame.image.fromstring(raw_data, size, "RGB")
+    d.screen.blit(surf, (int(d.WINDOW_WIDTH * 0.1), int(d.WINDOW_HEIGHT*0.18)))
 
-        drawScreenChangeButtons(d, screenMode.HISTORYOPTIONS, len(allDates))
+    drawScreenChangeButtons(d, screenMode.HISTORYOPTIONS, len(allDates))
 
 def drawPause(d):
-        #create transparent layer when pausing
+    #create transparent layer when pausing
     s = pygame.Surface((d.WINDOW_WIDTH,d.WINDOW_HEIGHT)) 
     s.set_alpha(200)      
     s.fill((255,255,255)) 
@@ -873,16 +931,33 @@ def drawPause(d):
     pauseTextRes = Text(resumeMsg,textLoc,50,color.black,topmode=False,transparent=True)
     pauseTextRes.draw(d)
 
-def drawMain(d):
-    if(d.newScreen):
-        d.screen.fill(color.white)
+    x,y = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.75))
+    w,h =  (int(d.WINDOW_WIDTH*.2),int(d.WINDOW_HEIGHT*0.1))
+    d.pauseMainButton = Button(x,y,w,h,color.black,"Main Menu",textSize=32,transText=True)
+    d.pauseMainButton.draw(d)
 
-        titleStr = "Falcon: the Pro Gym Assistant"
-        textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.18))
-        titleText = Text(titleStr,textLoc,70,color.black,topmode=False)
-        titleText.draw(d)
-        d.newScreen = False
-    #rewdraw buttons each time
+def drawMain(d):
+    d.screen.fill(color.white)
+
+    titleStr = "Falcon: the Pro Gym Assistant"
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.18))
+    titleText = Text(titleStr,textLoc,70,color.black,topmode=False)
+    titleText.draw(d)
+
+    #buttons
+    w,h =  (int(d.WINDOW_WIDTH*.2),int(d.WINDOW_HEIGHT*0.1))
+
+    #history button
+    x,y = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.75))
+    histButton = Button(x,y,w,h,color.black,"History",textSize=32)
+    clicked = histButton.handle_mouse()
+    if(clicked and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        d.newScreen = True
+        d.currentScreen = screenMode.HISTORYOPTIONS
+        d.screenChangeTime = pygame.time.get_ticks()
+    histButton.draw(d)
+
+
 
 def main(d):
     frames = 0 
@@ -934,33 +1009,15 @@ def pygameHandleEvent(d):
                         drawPause(d)
                         d.pause = True
                         d.workoutStopwatch.stop()
-
-# def pygameHandleButtons(d):
-#     if d.currentScreen == screenMode.HISTORYOPTIONS:
-#         for button in d.buttons:
-#             if button.handle_mouse():
-#                 if button.info == "back":
-#                     d.currentScreen = screenMode.MAIN
-#                 elif button.info == "trends":
-#                     d.currentScreen = screenMode.HISTORYTRENDS
-#                 else:
-#                     d.currentScreen = screenMode.HISTORYSUMMARY
-#                     d.workout = button.info
-#             # button.draw(d)
-#     elif d.currentScreen == screenMode.HISTORYSUMMARY:
-#         for button in d.buttons:
-#             if button.handle_mouse():
-#                 if button.info == "back":
-#                     d.currentScreen = screenMode.HISTORYOPTIONS
-#                 elif button.info == "trends":
-#                     d.currentScreen = screenMode.HISTORYTRENDS
-#             # button.draw(d)
-#     elif d.currentScreen == screenMode.HISTORYTRENDS:
-#         for button in d.buttons:
-#             if button.handle_mouse():
-#                 if button.info == "back":
-#                     d.currentScreen = screenMode.HISTORYOPTIONS
-#             # button.draw(d)
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if(d.pause):
+                #handle mouse
+                clicked = d.pauseMainButton.handle_mouse()
+                if(clicked and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+                    d.newScreen = True
+                    d.currentScreen = screenMode.MAIN
+                    d.screenChangeTime = pygame.time.get_ticks()
+                    d.pause = False
 
 data = data()
 init(data)
