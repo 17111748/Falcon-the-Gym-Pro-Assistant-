@@ -43,22 +43,23 @@ class LungeResult:
             str = "Invalid Joints Detected:"
             if (0 in self.invalid):
                 str += " Shoulder,"
-            if (1 in self.invalid):
+            elif (1 in self.invalid):
                 str += " Elbow,"
-            if (2 in self.invalid):
+            elif (2 in self.invalid):
                 str += " Wrist,"
-            if (3 in self.invalid):
+            elif (3 in self.invalid):
                 str += " Hip,"
-            if (4 in self.invalid):
+            elif (4 in self.invalid):
                 str += " Knee,"
-            if (5 in self.invalid):
+            elif (5 in self.invalid):
                 str += " Other Knee,"
-            if (6 in self.invalid):
+            elif (6 in self.invalid):
                 str += " Ankle,"
-            if (7 in self.invalid):
+            elif (7 in self.invalid):
                 str += " Other Ankle,"
             str = str[:-1] + "!"
-            self.feedback.append(str)
+            tuple = (str, os.path.join("audioFiles", "invalid.mp3"))
+            self.feedback.append(tuple)
 
     def getResult(self): 
         self.check1 = False 
