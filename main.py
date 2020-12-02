@@ -703,17 +703,17 @@ def drawSummaryInfo(d):
     focusText = Text(focusStr,textLoc,30,color.black,topmode=False)
     focusText.draw(d)
 
-    durationStr = "Duration: "+ str(d.workout[1])
+    durationStr = "Duration: "+ str(int(d.workout[1]))+" Seconds"
     textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.28))
     durationText = Text(durationStr,textLoc,30,color.black,topmode=False)
     durationText.draw(d)
     
-    caloriesStr = "Calories Burned: "+'{0:.1f}'.format(d.workout[4])
+    caloriesStr = "Calories Burned: "+'{0:.1f}'.format(d.workout[4])+" Cal"
     textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.33))
     caloriesText = Text(caloriesStr,textLoc,30,color.black,topmode=False)
     caloriesText.draw(d)
 
-    heartRateStr = "Average Heart Rate: "+'{0:.1f}'.format(d.workout[5])
+    heartRateStr = "Average Heart Rate: "+'{0:.1f}'.format(d.workout[5])+" BPM"
     textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.38))
     heartRateText = Text(heartRateStr,textLoc,30,color.black,topmode=False)
     heartRateText.draw(d)
@@ -733,10 +733,12 @@ def drawSummaryGraphInfo(d):
     pushupText.draw(d)
 
     if (perfectPushup + imperfectPushup) != 0:
-        pushupValStr = '{0:.1f}'.format(perfectPushup * 100 / (perfectPushup + imperfectPushup)) + "% Perfect"
+        pushupValStr = '{0:.1f}'.format(perfectPushup * 100 / (perfectPushup + imperfectPushup)) + "%"
     else:
-        pushupValStr = '{0:.1f}'.format(0) + "% Perfect"
-    textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.50))
+        # pushupValStr = '{0:.1f}'.format(0) + "% Perfect"
+        pushupValStr = '{0:.1f}'.format(0) + "%"
+
+    textLoc = (int(d.WINDOW_WIDTH*0.88), int(d.WINDOW_HEIGHT*0.50))
     pushupValText = Text(pushupValStr,textLoc,30,color.black,topmode=True)
     pushupValText.draw(d)
 
@@ -746,10 +748,10 @@ def drawSummaryGraphInfo(d):
     legRaiseText.draw(d)
 
     if (perfectLegRaise + imperfectLegRaise) != 0:
-        legRaiseValStr = '{0:.1f}'.format(perfectLegRaise * 100 / (perfectLegRaise + imperfectLegRaise)) + "% Perfect"
+        legRaiseValStr = '{0:.1f}'.format(perfectLegRaise * 100 / (perfectLegRaise + imperfectLegRaise)) + "%"
     else:
-        legRaiseValStr = '{0:.1f}'.format(0) + "% Perfect"
-    textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.635))
+        legRaiseValStr = '{0:.1f}'.format(0) + "%"
+    textLoc = (int(d.WINDOW_WIDTH*0.88), int(d.WINDOW_HEIGHT*0.635))
     legRaiseValText = Text(legRaiseValStr,textLoc,30,color.black,topmode=True)
     legRaiseValText.draw(d)
 
@@ -759,10 +761,10 @@ def drawSummaryGraphInfo(d):
     lungeText.draw(d)
 
     if (perfectLunge + imperfectLunge) != 0:
-        lungeValStr = '{0:.1f}'.format(perfectLunge * 100 / (perfectLunge + imperfectLunge)) + "% Perfect"
+        lungeValStr = '{0:.1f}'.format(perfectLunge * 100 / (perfectLunge + imperfectLunge)) + "%"
     else:
-        lungeValStr = '{0:.1f}'.format(0) + "% Perfect"
-    textLoc = (int(d.WINDOW_WIDTH*0.83), int(d.WINDOW_HEIGHT*0.77))
+        lungeValStr = '{0:.1f}'.format(0) + "%"
+    textLoc = (int(d.WINDOW_WIDTH*0.88), int(d.WINDOW_HEIGHT*0.77))
     lungeValText = Text(lungeValStr,textLoc,30,color.black,topmode=True)
     lungeValText.draw(d)
 
