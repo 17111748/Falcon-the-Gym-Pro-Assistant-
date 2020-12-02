@@ -14,6 +14,10 @@ import Signal_Processing.legRaiseAnalysis as legRaiseAnalysis
 import Signal_Processing.lungeAnalysis as lungeAnalysis
 import Signal_Processing.pushupAnalysis as pushupAnalysis
 
+def formatDateTime(s):
+    date_time_obj = datetime.datetime.strptime(s,'%Y-%m-%d %H:%M:%S.%f')
+    return date_time_obj.strftime("%a, %b %d %Y @ %I:%M %p")
+
 def convertString(bodyParts):
     result = [] 
     bodyList = bodyParts.split("_")
@@ -111,9 +115,9 @@ def initConstants(d):
        "l_l": os.path.join("UI", "images", "lunge_left", ""),
        "u": os.path.join("UI", "images", "push_up", "")
     }
-    d.REPS_PER_SET = 1
-    d.SETS_PER_WORKOUT = 1
-    d.SET_BREAK_TIME = 3
+    d.REPS_PER_SET = 10
+    d.SETS_PER_WORKOUT = 10
+    d.SET_BREAK_TIME = 10
     d.RESUME_TIME = 3
     #about 2s at 0.04s per rep
     d.END_SET_FRAME_COUNT = 50
@@ -187,9 +191,9 @@ def initNewWorkout(d):
 def initWorkouts(d):
     #if focused on core then that is 4 sets rest is 3
     d.workoutSets = {
-        "core": ["c","u","l","c","u","l","c","u","l","c"],
-        "upper": ["u","c","l","u","c","l","u","c","l","u"],
-        "leg": ["l","c","u","l","c","u","l","c","u","l"],
+        "core": ["c","u","l","c","u","l","c","u","l","c"]*2,
+        "upper": ["u","c","l","u","c","l","u","c","l","u"]*2,
+        "leg": ["l","c","u","l","c","u","l","c","u","l"]*2,
     }
     d.workoutNames = {
         "c": "Leg Raise",
@@ -197,7 +201,8 @@ def initWorkouts(d):
         "l_l": "Lunge (Left Forward)   ",
         "u": "Push-Up"
     }
-    d.workoutFocus = "core"
+    d.workoutKeys = list(d.workoutSets.keys())
+    d.workoutFocus = d.workoutKeys[0]
 
     d.workoutHRR = {
         "rest": 0.1,
@@ -258,7 +263,7 @@ def initSummary(d):
     d.summaryMainButton = Button(x,y,w,h,color.black,"Main Menu",textSize=32)
 
 def init(d):
-    d.currentScreen = screenMode.WORKOUT
+    d.currentScreen = screenMode.MAIN
     initConstants(d)
     initPyCamera(d)
     initFrames(d)
@@ -583,9 +588,8 @@ def drawSummary(d):
         d.currentScreen = screenMode.MAIN
         d.screenChangeTime = pygame.time.get_ticks()
 
-
 # Set dataLength to 0 if dont want the navigation buttons to show up
-def drawScreenChangeButtons(d, previousScreen, dataLength):
+def drawScreenChangeButtons(d, previousScreen, dataLength, trends=True, leftRight=True):
     # Back button
     x = int(d.WINDOW_WIDTH * 0.1)
     y = int(d.WINDOW_HEIGHT * 0.1)
@@ -604,49 +608,51 @@ def drawScreenChangeButtons(d, previousScreen, dataLength):
     backButton.draw(d)
 
     # Trends button
-    x = int(d.WINDOW_WIDTH * 0.9)
+    if(trends):
+        x = int(d.WINDOW_WIDTH * 0.9)
 
-    normalTrends = os.path.join("UI","images","icons","trends_og.png")
-    highlightedTrends = os.path.join("UI","images","icons","trends_highlighted.png")
-    trendsButton = ImageButton(x, y, w, h, color.black, "back", normalImg = normalTrends, highlightedImg = highlightedTrends)
-    if(trendsButton.handle_mouse() and currTime - d.screenChangeTime > d.changeScreensDelay):
-        d.newScreen = True
-        d.currentScreen = screenMode.HISTORYTRENDS
-        d.screenChangeTime = pygame.time.get_ticks()
-        d.pageNum = 0
-    trendsButton.draw(d)
+        normalTrends = os.path.join("UI","images","icons","trends_og.png")
+        highlightedTrends = os.path.join("UI","images","icons","trends_highlighted.png")
+        trendsButton = ImageButton(x, y, w, h, color.black, "back", normalImg = normalTrends, highlightedImg = highlightedTrends)
+        if(trendsButton.handle_mouse() and currTime - d.screenChangeTime > d.changeScreensDelay):
+            d.newScreen = True
+            d.currentScreen = screenMode.HISTORYTRENDS
+            d.screenChangeTime = pygame.time.get_ticks()
+            d.pageNum = 0
+        trendsButton.draw(d)
+    
+    if(leftRight):
+        # Left button
+        x = int(d.WINDOW_WIDTH * 0.1)
+        y = int(d.WINDOW_HEIGHT * 0.6)
+        w = int(d.WINDOW_HEIGHT * 0.1)
+        h = int(d.WINDOW_HEIGHT * 0.1)
 
-    # Left button
-    x = int(d.WINDOW_WIDTH * 0.1)
-    y = int(d.WINDOW_HEIGHT * 0.6)
-    w = int(d.WINDOW_HEIGHT * 0.1)
-    h = int(d.WINDOW_HEIGHT * 0.1)
-
-    normalLeft = os.path.join("UI","images","icons","left_og.png")
-    highlightedLeft = os.path.join("UI","images","icons","left_highlighted.png")
-    leftButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalLeft, highlightedImg = highlightedLeft)
-    currTime = pygame.time.get_ticks()
-    if(leftButton.handle_mouse() and currTime - d.screenChangeTime > d.changeScreensDelay):
+        normalLeft = os.path.join("UI","images","icons","left_og.png")
+        highlightedLeft = os.path.join("UI","images","icons","left_highlighted.png")
+        leftButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalLeft, highlightedImg = highlightedLeft)
+        currTime = pygame.time.get_ticks()
+        if(leftButton.handle_mouse() and currTime - d.screenChangeTime > d.changeScreensDelay):
+            if dataLength - (5 * (d.pageNum + 1)) > 0:
+                d.pageNum += 1
+            d.screenChangeTime = pygame.time.get_ticks()
         if dataLength - (5 * (d.pageNum + 1)) > 0:
-            d.pageNum += 1
-        d.screenChangeTime = pygame.time.get_ticks()
-    if dataLength - (5 * (d.pageNum + 1)) > 0:
-        leftButton.draw(d)
+            leftButton.draw(d)
 
-    # Right button
-    x = int(d.WINDOW_WIDTH * 0.9)
-    y = int(d.WINDOW_HEIGHT * 0.6)
+        # Right button
+        x = int(d.WINDOW_WIDTH * 0.9)
+        y = int(d.WINDOW_HEIGHT * 0.6)
 
-    normalRight = os.path.join("UI","images","icons","right_og.png")
-    highlightedRight = os.path.join("UI","images","icons","right_highlighted.png")
-    rightButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalRight, highlightedImg = highlightedRight)
-    currTime = pygame.time.get_ticks()
-    if(rightButton.handle_mouse() and currTime - d.screenChangeTime > d.changeScreensDelay):
+        normalRight = os.path.join("UI","images","icons","right_og.png")
+        highlightedRight = os.path.join("UI","images","icons","right_highlighted.png")
+        rightButton = ImageButton(x, y, w, h, color.black, "left", normalImg = normalRight, highlightedImg = highlightedRight)
+        currTime = pygame.time.get_ticks()
+        if(rightButton.handle_mouse() and currTime - d.screenChangeTime > d.changeScreensDelay):
+            if d.pageNum > 0:
+                d.pageNum -= 1
+            d.screenChangeTime = pygame.time.get_ticks()
         if d.pageNum > 0:
-            d.pageNum -= 1
-        d.screenChangeTime = pygame.time.get_ticks()
-    if d.pageNum > 0:
-        rightButton.draw(d)
+            rightButton.draw(d)
 
 def drawHistoryOptions(d):
     if(d.newScreen):
@@ -670,7 +676,7 @@ def drawHistoryOptions(d):
         # Displaying the set of options
         for i in range (len(data)):
             workout = data[len(data)-i-1]
-            optionStr = workout[2]
+            optionStr = formatDateTime(workout[2])
             option = Button(int(d.WINDOW_WIDTH * 0.5), int(d.WINDOW_HEIGHT * 0.35 + 100 * i), int(0.6 * d.WINDOW_WIDTH), 50, color.black, optionStr, info = workout)
             if(option.handle_mouse() and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):  
                 d.currentScreen = screenMode.HISTORYSUMMARY
@@ -687,12 +693,12 @@ def drawSummaryInfo(d):
     titleText = Text(titleStr,textLoc,60,color.black,topmode=False)
     titleText.draw(d)
 
-    workoutStr = "Workout on "+ d.workout[2]
+    workoutStr = "Workout on "+ formatDateTime(d.workout[2])
     textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.18))
     workoutText = Text(workoutStr,textLoc,30,color.black,topmode=False)
     workoutText.draw(d)
 
-    focusStr = "Focus: "+ d.workout[0]
+    focusStr = "Focus: "+ d.workout[0].capitalize()
     textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.23))
     focusText = Text(focusStr,textLoc,30,color.black,topmode=False)
     focusText.draw(d)
@@ -940,24 +946,245 @@ def drawMain(d):
     d.screen.fill(color.white)
 
     titleStr = "Falcon: the Pro Gym Assistant"
-    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.18))
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.12))
     titleText = Text(titleStr,textLoc,70,color.black,topmode=False)
     titleText.draw(d)
 
+    #falcon image
+    falcPath = os.path.join("UI","images","falcon.png")
+    loadedImage = pygame.image.load(falcPath)
+    x,y = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.43))
+    centeredLoc = loadedImage.get_rect(center=(x,y))
+    d.screen.blit(loadedImage, centeredLoc)
+    
     #buttons
+    iX,iY = int(d.WINDOW_WIDTH*0.39),int(d.WINDOW_HEIGHT*0.75)
     w,h =  (int(d.WINDOW_WIDTH*.2),int(d.WINDOW_HEIGHT*0.1))
-
-    #history button
-    x,y = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.75))
-    histButton = Button(x,y,w,h,color.black,"History",textSize=32)
+    #start button
+    x,y = (iX,iY)
+    histButton = Button(x,y,w,h,color.black,"Start",textSize=32)
     clicked = histButton.handle_mouse()
+    if(clicked and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        d.newScreen = True
+        d.currentScreen = screenMode.WORKOUTSETUP
+        d.screenChangeTime = pygame.time.get_ticks()
+    histButton.draw(d)
+    #history button
+    x,y = (iX+int(d.WINDOW_WIDTH*0.11)*2,iY)
+    b = Button(x,y,w,h,color.black,"History",textSize=32)
+    clicked = b.handle_mouse()
     if(clicked and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
         d.newScreen = True
         d.currentScreen = screenMode.HISTORYOPTIONS
         d.screenChangeTime = pygame.time.get_ticks()
-    histButton.draw(d)
+    b.draw(d)
+    #profile button
+    x,y = (iX,int(d.WINDOW_HEIGHT*0.06)*2+iY)
+    b = Button(x,y,w,h,color.black,"Profile "+str(d.currProfile)+" Active",textSize=32)
+    clicked = b.handle_mouse()
+    if(clicked and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        d.newScreen = True
+        d.currProfile = (d.currProfile)%3+1
+        d.db.updateLastProfile(d.currProfile)
+        profileData = d.db.getProfile(d.currProfile)
+        d.age = profileData[2]
+        d.weight = profileData[1]
+        d.screenChangeTime = pygame.time.get_ticks()
+    b.draw(d)
+    #settings button
+    x,y = (iX+int(d.WINDOW_WIDTH*0.11)*2,int(d.WINDOW_HEIGHT*0.06)*2+iY)
+    b = Button(x,y,w,h,color.black,"Settings",textSize=32)
+    clicked = b.handle_mouse()
+    if(clicked and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        d.newScreen = True
+        d.currentScreen = screenMode.SETTINGS
+        d.screenChangeTime = pygame.time.get_ticks()
+    b.draw(d)
 
+def drawSetup(d):
+    d.screen.fill(color.white)
+    drawScreenChangeButtons(d, screenMode.MAIN,0, trends=False, leftRight=False)
+    
+    titleStr = "Workout Setup"
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.1))
+    titleText = Text(titleStr,textLoc,60,color.black,topmode=False)
+    titleText.draw(d)
 
+    #WORKOUT_FOCUS
+    y = int(d.WINDOW_HEIGHT*0.27)
+    tStr = "Workout Focus:"
+    textLoc = (int(d.WINDOW_WIDTH*0.2), y)
+    txt = Text(tStr,textLoc,45,color.black)
+    txt.draw(d)
+    #left button
+    buttonDim = int(d.WINDOW_HEIGHT * 0.07)
+    normalLeft = os.path.join("UI","images","icons","left_og.png")
+    highlightedLeft = os.path.join("UI","images","icons","left_highlighted.png")
+    leftButton = ImageButton(int(d.WINDOW_WIDTH*0.4), y, buttonDim, buttonDim, color.black, "left", normalImg = normalLeft, highlightedImg = highlightedLeft)
+    if(leftButton.handle_mouse() and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        #increment to next focus
+        d.workoutFocus = d.workoutKeys[(d.workoutKeys.index(d.workoutFocus)+1)%len(d.workoutKeys)]
+        d.screenChangeTime = pygame.time.get_ticks()
+    leftButton.draw(d)
+    #right button
+    normalRight = os.path.join("UI","images","icons","right_og.png")
+    highlightedRight = os.path.join("UI","images","icons","right_highlighted.png")
+    rightButton = ImageButton(int(d.WINDOW_WIDTH*0.6), y, buttonDim, buttonDim, color.black, "left", normalImg = normalRight, highlightedImg = highlightedRight)
+    if(rightButton.handle_mouse() and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        #increment to next focus
+        d.workoutFocus = d.workoutKeys[(d.workoutKeys.index(d.workoutFocus)-1)%len(d.workoutKeys)]
+        d.screenChangeTime = pygame.time.get_ticks()
+    rightButton.draw(d)
+    #write focus
+    tStr = d.workoutFocus.capitalize()
+    textLoc = (int(d.WINDOW_WIDTH*0.5), y)
+    txt = Text(tStr,textLoc,45,color.black)
+    txt.draw(d)
+
+    #NUMBER OF SETS  
+    minLim,maxLim = (1,20)
+    y = int(d.WINDOW_HEIGHT*0.4)
+    tStr = "Number of Sets:"
+    textLoc = (int(d.WINDOW_WIDTH*0.205), y)
+    txt = Text(tStr,textLoc,45,color.black)
+    txt.draw(d)
+    #left button
+    leftButton = ImageButton(int(d.WINDOW_WIDTH*0.4), y, buttonDim, buttonDim, color.black, "left", normalImg = normalLeft, highlightedImg = highlightedLeft)
+    if(leftButton.handle_mouse() and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        #dec less sets
+        if(d.SETS_PER_WORKOUT>minLim):
+            d.SETS_PER_WORKOUT-=1
+        d.screenChangeTime = pygame.time.get_ticks()
+    leftButton.draw(d)
+    #right button
+    rightButton = ImageButton(int(d.WINDOW_WIDTH*0.6), y, buttonDim, buttonDim, color.black, "left", normalImg = normalRight, highlightedImg = highlightedRight)
+    if(rightButton.handle_mouse() and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        #inc to more sets
+        if(d.SETS_PER_WORKOUT<maxLim):
+            d.SETS_PER_WORKOUT+=1
+        d.screenChangeTime = pygame.time.get_ticks()
+    rightButton.draw(d)
+    #write num sets
+    tStr = str(d.SETS_PER_WORKOUT)
+    textLoc = (int(d.WINDOW_WIDTH*0.5), y)
+    txt = Text(tStr,textLoc,45,color.black)
+    txt.draw(d)
+
+    #NUMBER OF REPS  
+    y = int(d.WINDOW_HEIGHT*0.53)
+    tStr = "Number of Reps:"
+    textLoc = (int(d.WINDOW_WIDTH*0.205), y)
+    txt = Text(tStr,textLoc,45,color.black)
+    txt.draw(d)
+    #left button
+    leftButton = ImageButton(int(d.WINDOW_WIDTH*0.4), y, buttonDim, buttonDim, color.black, "left", normalImg = normalLeft, highlightedImg = highlightedLeft)
+    if(leftButton.handle_mouse() and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        #dec less sets
+        if(d.REPS_PER_SET>minLim):
+            d.REPS_PER_SET-=1
+        d.screenChangeTime = pygame.time.get_ticks()
+    leftButton.draw(d)
+    #right button
+    rightButton = ImageButton(int(d.WINDOW_WIDTH*0.6), y, buttonDim, buttonDim, color.black, "left", normalImg = normalRight, highlightedImg = highlightedRight)
+    if(rightButton.handle_mouse() and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        #inc to more sets
+        if(d.REPS_PER_SET<maxLim):
+            d.REPS_PER_SET+=1
+        d.screenChangeTime = pygame.time.get_ticks()
+    rightButton.draw(d)
+    #write num sets
+    tStr = str(d.REPS_PER_SET)
+    textLoc = (int(d.WINDOW_WIDTH*0.5), y)
+    txt = Text(tStr,textLoc,45,color.black)
+    txt.draw(d)
+
+    #START WORKOUT BUTTON
+    w,h =  (int(d.WINDOW_WIDTH*.2),int(d.WINDOW_HEIGHT*0.1))
+    x,y = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.8))
+    startWkt = Button(x,y,w,h,color.black,"Start Workout",textSize=32)
+    clicked = startWkt.handle_mouse()
+    if(clicked and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        d.newScreen = True
+        d.currentScreen = screenMode.WORKOUT
+        d.newWorkout = True
+        d.screenChangeTime = pygame.time.get_ticks()
+    startWkt.draw(d)
+
+def drawSettings(d):
+    d.screen.fill(color.white)
+    drawScreenChangeButtons(d, screenMode.MAIN,0, trends=False, leftRight=False)
+    
+    titleStr = "Settings for Profile "+str(d.currProfile)
+    textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.1))
+    titleText = Text(titleStr,textLoc,60,color.black,topmode=False)
+    titleText.draw(d)
+
+    #Weight (Pounds)
+    minLim,maxLim = (50,300)
+    y = int(d.WINDOW_HEIGHT*0.27)
+    tStr = "Weight (lb):"
+    textLoc = (int(d.WINDOW_WIDTH*0.23), y)
+    txt = Text(tStr,textLoc,45,color.black)
+    txt.draw(d)
+    #left button
+    buttonDim = int(d.WINDOW_HEIGHT * 0.07)
+    normalLeft = os.path.join("UI","images","icons","left_og.png")
+    highlightedLeft = os.path.join("UI","images","icons","left_highlighted.png")
+    leftButton = ImageButton(int(d.WINDOW_WIDTH*0.4), y, buttonDim, buttonDim, color.black, "left", normalImg = normalLeft, highlightedImg = highlightedLeft)
+    if(leftButton.handle_mouse() and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        #dec by 5lbs
+        if(d.weight-5>=minLim):
+            d.weight = d.weight-5
+            d.db.updateProfile(d.currProfile,d.weight,d.age)
+        d.screenChangeTime = pygame.time.get_ticks()
+    leftButton.draw(d)
+    #right button
+    normalRight = os.path.join("UI","images","icons","right_og.png")
+    highlightedRight = os.path.join("UI","images","icons","right_highlighted.png")
+    rightButton = ImageButton(int(d.WINDOW_WIDTH*0.6), y, buttonDim, buttonDim, color.black, "left", normalImg = normalRight, highlightedImg = highlightedRight)
+    if(rightButton.handle_mouse() and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        #inc by 5lbs
+        if(d.weight+5<=maxLim):
+            d.weight = d.weight+5
+            d.db.updateProfile(d.currProfile,d.weight,d.age)
+        d.screenChangeTime = pygame.time.get_ticks()
+    rightButton.draw(d)
+    #write weight
+    tStr = str(d.weight)
+    textLoc = (int(d.WINDOW_WIDTH*0.5), y)
+    txt = Text(tStr,textLoc,45,color.black)
+    txt.draw(d)
+
+    #Age  
+    minLim,maxLim = (1,100)
+    y = int(d.WINDOW_HEIGHT*0.4)
+    tStr = "Age:"
+    textLoc = (int(d.WINDOW_WIDTH*0.185), y)
+    txt = Text(tStr,textLoc,45,color.black)
+    txt.draw(d)
+    #left button
+    leftButton = ImageButton(int(d.WINDOW_WIDTH*0.4), y, buttonDim, buttonDim, color.black, "left", normalImg = normalLeft, highlightedImg = highlightedLeft)
+    if(leftButton.handle_mouse() and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        #dec age by 1
+        if(d.age>minLim):
+            d.age-=1
+            d.db.updateProfile(d.currProfile,d.weight,d.age)
+        d.screenChangeTime = pygame.time.get_ticks()
+    leftButton.draw(d)
+    #right button
+    rightButton = ImageButton(int(d.WINDOW_WIDTH*0.6), y, buttonDim, buttonDim, color.black, "left", normalImg = normalRight, highlightedImg = highlightedRight)
+    if(rightButton.handle_mouse() and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        #inc age by 1
+        if(d.age<maxLim):
+            d.age+=1
+            d.db.updateProfile(d.currProfile,d.weight,d.age)
+        d.screenChangeTime = pygame.time.get_ticks()
+    rightButton.draw(d)
+    #write num sets
+    tStr = str(d.age)
+    textLoc = (int(d.WINDOW_WIDTH*0.5), y)
+    txt = Text(tStr,textLoc,45,color.black)
+    txt.draw(d)
 
 def main(d):
     frames = 0 
@@ -980,6 +1207,10 @@ def main(d):
             drawHistorySummary(d)
         elif(d.currentScreen == screenMode.HISTORYTRENDS):
             drawHistoryTrends(d)
+        elif(d.currentScreen == screenMode.WORKOUTSETUP):
+            drawSetup(d)
+        elif(d.currentScreen == screenMode.SETTINGS):
+            drawSettings(d)
         pygame.display.update()
         pygameHandleEvent(d)
         # pygameHandleButtons(d)

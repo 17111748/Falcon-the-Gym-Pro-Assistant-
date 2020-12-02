@@ -14,6 +14,8 @@ class screenMode(enum.Enum):
     HISTORYSUMMARY = 5
     HISTORYOPTIONS = 6
     HISTORYTRENDS = 7
+    WORKOUTSETUP = 8 
+    SETTINGS = 9 
 
 class Text(object):
     def __init__(self,text,location, size = 60,col = color.white,topmode = False,transparent=False):
@@ -70,7 +72,7 @@ class Button(object):
             tempText = Text(self.text,self.textLoc,self.textSize, color.black, transparent=self.transText)
         else:
             pygame.draw.rect(d.screen, self.color, self.rect,width=4,border_radius=10)
-            tempText = Text(self.text,self.textLoc,self.textSize+2, color.black, transparent=self.transText)
+            tempText = Text(self.text,self.textLoc,self.textSize+3, color.black, transparent=self.transText)
 
         tempText.draw(d)
 
