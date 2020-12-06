@@ -3,8 +3,8 @@ matplotlib.use("Agg") # Need this before importing any other matplotlib modules
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_agg as agg
 
-import sys, pygame, cv2, time, threading, queue, serial, random, UI.database, pprint, datetime, os
-
+import sys, pygame, cv2, time, threading, queue, serial
+import random, UI.database, pprint, datetime, os, spotipy
 from PIL import Image
 from UI.structs import *
 from UI.colors import *
@@ -30,6 +30,18 @@ def convertString(bodyParts):
         result.append((row, col))
 
     return result 
+
+def getSp(d):
+    if(d.sp):
+        return d.sp
+    scope = 'user-read-playback-state user-modify-playback-state'
+    token = spotipy.util.prompt_for_user_token("Venkata Vivek Thallam", scope,
+    client_id='31783ef36dc04e8589a58e30bbe327fe',
+    client_secret='2c03f9ea5fb44d05b7c44016dce2bdeb',
+    redirect_uri='http://localhost:8888/callback')
+    sp = spotipy.Spotify(auth=token)
+
+    return sp
 
 def sendPicture(d,workout):
     print("sending picture of:", workout)
@@ -128,6 +140,7 @@ def initConstants(d):
     }
     d.feedbackAudioVolume = 1.0
     d.changeScreensDelay = 250
+    d.sp = None
 
 def initPyCamera(d):
     #setup pygame/camera
@@ -139,6 +152,7 @@ def initPyCamera(d):
     pygame.display.set_caption("OpenCV camera stream on Pygame")
     d.screen = pygame.display.set_mode([d.WINDOW_WIDTH, d.WINDOW_HEIGHT])
     d.live_video = pygame.Surface(d.LIVE_VIDEO_DIMS)
+    d.spotify_surfce = pygame.Surface((int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.3)))
     d.clock = pygame.time.Clock()
     
     pygame.mixer.init()
@@ -371,13 +385,55 @@ def updateHRText(d,workout):
     hrText = Text(hrStr,textLoc,35,color.black,topmode=True)
     hrText.draw(d)    
 
+def drawSpotify(d):
+    #might need to do only few seconds instead
+    devices = d.sp.devices()['devices']
+    device_id = None
+    for i in range(len(devices)):
+        if(devices[i]['is_active']):
+            device_id = devices[i]['id']
+
+    if device_id == None and len(devices) != 0:
+        device_id = devices[0]['id']
+
+    if(device_id):
+        #left button
+        buttonDim = int(d.WINDOW_HEIGHT * 0.07)
+        normalLeft = os.path.join("UI","images","icons","left_og.png")
+        highlightedLeft = os.path.join("UI","images","icons","left_highlighted.png")
+        leftButton = ImageButton(int(d.WINDOW_WIDTH*0.4), int(d.WINDOW_HEIGHT*0.8), buttonDim, buttonDim, color.black, "left", normalImg = normalLeft, highlightedImg = highlightedLeft)
+        if(leftButton.handle_mouse() and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+            try:
+                d.sp.previous_track(device_id)
+            except:
+                print("no previous track")            
+        leftButton.draw(d)
+        #right button
+        normalRight = os.path.join("UI","images","icons","right_og.png")
+        highlightedRight = os.path.join("UI","images","icons","right_highlighted.png")
+        rightButton = ImageButton(int(d.WINDOW_WIDTH*0.6), int(d.WINDOW_HEIGHT*0.8), buttonDim, buttonDim, color.black, "left", normalImg = normalRight, highlightedImg = highlightedRight)
+        if(rightButton.handle_mouse() and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+            try:
+                d.sp.next_track(device_id)
+            except:
+                print("no next track")    
+        rightButton.draw(d)
+
+        songStr = d.sp.current_user_playing_track()['item']['name']
+        textLoc = (int(d.WINDOW_WIDTH*0.025), int(d.WINDOW_HEIGHT*0.025))
+        workText = Text(songStr,textLoc,50,color.black,topmode=True)
+        workText.draw(d)
+    else: 
+        pass
+        #device not found
+    
+
 def drawWorkout(d):
     if(not d.pause):
         if(d.feedbackStopwatch.getTime()>2):
             d.feedbackStopwatch.reset()
             d.displayFeedback=(len(d.displayFeedback)*3)*" "
         updateFeedbackString(d)
-
 
         if(d.newWorkout):
             initNewWorkout(d)
@@ -436,6 +492,8 @@ def drawWorkout(d):
             d.beginTime = pygame.time.get_ticks()
             
             d.newScreen = False
+
+
 
         #take photo and upate live video
         ret, frame = d.camera.read()
@@ -538,6 +596,10 @@ def drawWorkout(d):
                     updateResumeTimeText(d)
             d.beginTime = currTime
         
+        #spotify
+        if(d.sp): 
+            print("drawing")
+            drawSpotify(d)
 def drawSummary(d):
     d.screen.fill(color.white)
 
@@ -1187,6 +1249,18 @@ def drawSettings(d):
     textLoc = (int(d.WINDOW_WIDTH*0.5), y)
     txt = Text(tStr,textLoc,45,color.black)
     txt.draw(d)
+
+    #spotify
+    w,h =  (int(d.WINDOW_WIDTH*.25),int(d.WINDOW_HEIGHT*0.1))
+    x,y = (int(d.WINDOW_WIDTH*0.5),int(d.WINDOW_HEIGHT*0.8))
+    spotifyConnect = bool(d.sp)
+    spotText = "Spotify Authenticated" if spotifyConnect else "Connect to Spotify"
+    btn = Button(x,y,w,h,color.black,spotText,textSize=32)
+    clicked = btn.handle_mouse()
+    if(clicked and not spotifyConnect and pygame.time.get_ticks()-d.screenChangeTime>d.changeScreensDelay):
+        d.sp = getSp(d)
+        d.screenChangeTime = pygame.time.get_ticks()
+    btn.draw(d)
 
 def main(d):
     frames = 0 
