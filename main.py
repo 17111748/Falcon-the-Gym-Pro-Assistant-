@@ -765,7 +765,9 @@ def drawSummaryInfo(d):
     focusText = Text(focusStr,textLoc,30,color.black,topmode=False)
     focusText.draw(d)
 
-    durationStr = "Duration: "+ str(int(d.workout[1]))+" Seconds"
+    m, s = divmod(int(d.workout[1]), 60)
+    h, m = divmod(m, 60)
+    durationStr = "Workout Duration: "+(f'{m:02d}:{s:02d}')
     textLoc = (int(d.WINDOW_WIDTH*0.5), int(d.WINDOW_HEIGHT*0.28))
     durationText = Text(durationStr,textLoc,30,color.black,topmode=False)
     durationText.draw(d)
