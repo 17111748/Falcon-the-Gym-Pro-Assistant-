@@ -19,6 +19,8 @@ for i in range(len(devices)):
 if device_id == None and len(devices) != 0:
     device_id = devices[0]['id']
 
+sp.current_user_
+
 print(sp.current_user_playing_track()['item']['name']) # Name of the currently playing song
 
 # sp.previous_track(device_id)
